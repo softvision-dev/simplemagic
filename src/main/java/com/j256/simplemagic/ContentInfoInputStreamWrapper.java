@@ -67,14 +67,14 @@ public class ContentInfoInputStreamWrapper extends InputStream {
 	}
 
 	@Override
-	public int read(byte b[], int off, int len) throws IOException {
-		int numRead = delegate.read(b, off, len);
+	public int read(byte[] data, int off, int len) throws IOException {
+		int numRead = delegate.read(data, off, len);
 		int left = firstBytes.length - byteCount;
 		if (left > numRead) {
 			left = numRead;
 		}
 		for (int i = off; i < off + left; i++) {
-			firstBytes[byteCount++] = b[i];
+			firstBytes[byteCount++] = data[i];
 		}
 		return numRead;
 	}

@@ -78,6 +78,7 @@ public class ContentInfo implements Serializable {
 	/**
 	 * Returns an array of associated file-extensions or null if none.
 	 */
+	@SuppressWarnings("unused")
 	public String[] getFileExtensions() {
 		return fileExtensions;
 	}

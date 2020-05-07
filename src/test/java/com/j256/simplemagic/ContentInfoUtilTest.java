@@ -80,7 +80,7 @@ public class ContentInfoUtilTest {
 					"gzip compressed data, from Unix, last modified: 2013-05-08 02:57:08 +0000", false),
 			new FileType("/files/x.m4v", ContentType.MP4A, "mp4a", "video/mp4",
 					"ISO Media, MPEG v4 system, iTunes AVC-LC", false),
-			new FileType("/files/x.xls", ContentType.OTHER, "OLE", null, "OLE 2 Compound Document", false),
+			new FileType("/files/x.xls", ContentType.OTHER, "Microsoft", null, "Microsoft Office Document", true),
 			new FileType("/files/x.xlsx", ContentType.MICROSOFT_EXCEL_XML, "excel",
 					"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Microsoft Excel 2007+",
 					false),
@@ -95,7 +95,7 @@ public class ContentInfoUtilTest {
 			new FileType("/files/x.wav", ContentType.WAV, "wav", "audio/x-wav",
 					"RIFF (little-endian) data, WAVE audio, Microsoft PCM, 16 bit, stereo 44100 Hz", false),
 			// NOTE: this seems to be somewhat valid since powerpoint uses this format
-			new FileType("/files/x.ppt", ContentType.OTHER, "OLE", null, "OLE 2 Compound Document", false),
+			new FileType("/files/x.ppt", ContentType.OTHER, "Microsoft", null, "Microsoft Office Document", true),
 			new FileType("/files/x.pptx", ContentType.MICROSOFT_POWERPOINT_XML, "powerpoint",
 					"application/vnd.openxmlformats-officedocument.presentationml.presentation",
 					"Microsoft PowerPoint 2007+", false),

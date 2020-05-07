@@ -2,13 +2,12 @@ package com.j256.simplemagic.integration;
 
 import java.io.IOException;
 
+import com.j256.simplemagic.pattern.components.criterion.types.BaseMagicTypeTest;
 import org.junit.Test;
-
-import com.j256.simplemagic.types.BaseMagicTypeTest;
 
 /**
  * Run tests from a sample magic snippets. Mostly from rob stryker via github. Thanks dude.
- * 
+ *
  * @author robstryker
  */
 public class RiscOsTest extends BaseMagicTypeTest {

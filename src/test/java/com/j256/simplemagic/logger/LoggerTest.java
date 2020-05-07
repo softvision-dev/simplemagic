@@ -22,7 +22,7 @@ public class LoggerTest {
 
 	private Logger logger;
 	private Log mockLog;
-	private Throwable throwable = new Throwable();
+	private final Throwable throwable = new Throwable();
 
 	@Before
 	public void before() {

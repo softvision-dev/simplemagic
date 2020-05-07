@@ -1,34 +1,64 @@
 package com.j256.simplemagic.endian;
 
-import java.nio.ByteOrder;
-
 /**
  * Types of endian-ness supported by the system.
- * 
+ *
  * @author graywatson
  */
 public enum EndianType {
-	/** big endian, also called network byte order (motorola 68k) */
-	BIG(new BigEndianConverter()),
-	/** little endian (x86) */
-	LITTLE(new LittleEndianConverter()),
-	/** old PDP11 byte order */
-	MIDDLE(new MiddleEndianConverter()),
-	/** uses the byte order of the current system */
-	NATIVE(ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN ? BIG.getConverter() : LITTLE.getConverter()),
-	// end
-	;
 
-	private EndianConverter converter;
+	/**
+	 * big endian, also called network byte order (motorola 68k)
+	 */
+	BIG('B', 'S', 'I', 'L'),
+	/**
+	 * little endian (x86)
+	 */
+	LITTLE('b', 's', 'i', 'l'),
+	/**
+	 * old PDP11 byte order
+	 */
+	MIDDLE('m'),
+	/**
+	 * uses the byte order of the current system
+	 */
+	NATIVE();
 
-	private EndianType(EndianConverter converter) {
-		this.converter = converter;
+	private final char[] names;
+
+	/**
+	 * Instantiates an enum {@link EndianType} value.
+	 *
+	 * @param names The magic pattern names for this {@link EndianType}.
+	 */
+	EndianType(char... names) {
+		this.names = names;
 	}
 
 	/**
-	 * Returns the converter associated with this endian-type.
+	 * Returns the magic pattern names for this {@link EndianType}.
+	 *
+	 * @return The magic pattern names for this {@link EndianType}.
 	 */
-	public EndianConverter getConverter() {
-		return converter;
+	public char[] getNames() {
+		return names;
+	}
+
+	/**
+	 * Returns a matching {@link EndianType} for the given definition value.
+	 *
+	 * @param name The definition value an {@link EndianType} shall be found for.
+	 * @return The {@link EndianType} matching the given definition value.
+	 */
+	public static EndianType forName(char name) {
+		for (EndianType endianType : values()) {
+			for (char endianTypeName : endianType.getNames()) {
+				if (endianTypeName == name) {
+					return endianType;
+				}
+			}
+		}
+
+		return LITTLE;
 	}
 }
