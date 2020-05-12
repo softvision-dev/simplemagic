@@ -2,115 +2,123 @@ package com.j256.simplemagic.pattern.components;
 
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.MagicPattern;
+import com.j256.simplemagic.pattern.components.offset.MagicIndirectOffset;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The offset definition from a line in magic (5) format.
+ * <b>An instance of this class represents an offset definition from a line in magic (5) format.</b>
+ * <p>
+ * As defined in the Magic(5) Manpage:
+ * </p>
+ * <p>
+ * <i>
+ * Some file formats contain additional information which is to be printed along with the file type or need additional
+ * tests to determine the true file type. These additional tests are introduced by one or more > characters preceding
+ * the offset.
+ * </i>
+ * </p>
+ * <p>
+ * <i>
+ * [...] Offsets do not need to be constant, but can also be read from the file being examined. If the first character
+ * following the last > is a ( then the string after the parenthesis is interpreted as an indirect offset. That means
+ * that the number after the parenthesis is used as an offset in the file. The value at that offset is read, and is
+ * used again as an offset in the file. Indirect offsets are of the form: (( x [.[bislBISL]][+-][ y ]). The value of x
+ * is used as an offset in the file. A byte, id3 length, short or long is read at that offset depending on the
+ * [bislBISLm] type specifier. The capitalized types interpret the number as a big endian value, whereas the small
+ * letter versions interpret the number as a little endian value; the m type interprets the number as a middle
+ * endian (PDP-11) value. To that number the value of y is added and the result is used as an offset in the file.
+ * The default type if one is not specified is long.
+ * </p>
+ * </i>
+ * <p>
+ * Attention: The actual form of an indirect offset is: (( x[.[bislBISLm]][+-*%/&|^][ y ])
+ * </p>
  */
 public class MagicOffset {
 
-	private static final Pattern OFFSET_PATTERN =
-			Pattern.compile("\\(([0-9a-fA-Fx]+)\\.?([bsilBSILm]?)([*+\\-]?)([0-9a-fA-Fx]*)\\)");
+	private static final Pattern BASE_OFFSET_PATTERN = Pattern.compile("^(&)?(?:(?:\\((.+)\\))|(.+))$");
 
-	private final int offset;
-	private final int incrementalOffset;
-	private final boolean addOffset;
-	private final MagicEndianType endianType;
+	private final long baseOffset;
+	private final boolean relative;
+	private final MagicIndirectOffset indirectOffset;
 
 	/**
-	 * Creates a new {@link MagicOffset} as found in a {@link MagicPattern}. The type shall influence the offset for the
-	 * extraction of compared values from compared data.
+	 * Creates a new {@link MagicOffset} as found in a {@link MagicPattern}. Represents the offset for the extraction of
+	 * compared values from compared data.
 	 * <p>
 	 * The binary data must contain a matching value at the hereby defined position, to match the pattern.
 	 * </p>
 	 *
-	 * @param offset            The offset from which a compared value shall be extracted. The binary data must contain a
-	 *                          matching value at that position to match the pattern.
-	 * @param incrementalOffset This value shall be added to the defined offset as an increment.
-	 * @param addOffset         When set to true, the hereby defined offset shall not indicate a fixed position in the
-	 *                          binary data, but shall rather be added on top of a current read offset.
-	 * @param endianType        Determines the endianness of the data values that shall be extracted
-	 *                          {@link MagicEndianType}. This may be set to 'null', if such a definition is not given
-	 *                          by the pattern.
+	 * @param baseOffset     The simple offset, that defines a constant offset in the compared data. Will be ignored,
+	 *                       if an indirect offset has been defined.
+	 * @param relative       Set to true, if the Offset is defined relative to a current read offset in the compared data.
+	 * @param indirectOffset When set, this offset is defined as an {@link MagicIndirectOffset} and shall be read from
+	 *                       the compared data. When set, the baseOffset is ignored. Set to null for constant offsets.
 	 */
-	public MagicOffset(int offset, int incrementalOffset, boolean addOffset, MagicEndianType endianType) {
-		this.offset = offset;
-		this.incrementalOffset = incrementalOffset;
-		this.addOffset = addOffset;
-		this.endianType = endianType;
+	public MagicOffset(long baseOffset, boolean relative, MagicIndirectOffset indirectOffset) {
+		this.baseOffset = baseOffset;
+		this.relative = relative;
+		this.indirectOffset = indirectOffset;
 	}
 
 	/**
-	 * Returns the byte offset from which bytes shall be read to evaluate a criterion.
+	 * Returns the simple constant offset, that defines a read position in compared data. This value shall be ignored if
+	 * this offset is defined to contain a {@link MagicIndirectOffset}.
 	 *
-	 * @return The byte offset.
+	 * @return The simple constant offset, that defines a read position in compated data.
 	 */
-	public int getOffset() {
-		return offset;
+	public long getBaseOffset() {
+		return baseOffset;
 	}
 
 	/**
-	 * Returns the incremental offset that shall be added to the byte offset.
+	 * Returns true, if this offset is relative to a current read offset in the compared data.
 	 *
-	 * @return The incremental offset value.
+	 * @return True, if this offset is relative to a current read offset in the compared data.
 	 */
-	public int getIncrementalOffset() {
-		return incrementalOffset;
+	public boolean isRelative() {
+		return relative;
 	}
 
 	/**
-	 * Returns true, if the offset is not an absolute value, and shall be determined relative to a current read offset.
+	 * Returns true, if this offset is defined as an indirect offset, that shall be read from compared data.
 	 *
-	 * @return True, if the offset is not an absolute value, and shall be determined relative to a current read offset.
+	 * @return True if this offset is defined as an indirect offset.
 	 */
-	public boolean isAddOffset() {
-		return addOffset;
+	public boolean isIndirect() {
+		return indirectOffset != null;
 	}
 
 	/**
-	 * Returns the endianness of the value, that shall be extracted and evaluated.
+	 * Returns the {@link MagicIndirectOffset}, if this offset is defined as an indirect offset and shall be read from
+	 * the compared data. When set, the baseOffset is ignored. Will return null, if this is offset is not indirect.
 	 *
-	 * @return The endianness of the value, that shall be extracted and evaluated.
+	 * @return The {@link MagicIndirectOffset}, if this offset is defined as an indirect offset. Null if it is not.
 	 */
-	public MagicEndianType getEndianType() {
-		return endianType;
+	public MagicIndirectOffset getIndirectOffset() {
+		return indirectOffset;
 	}
 
 	/**
 	 * Determines the offset of a compared value, that shall be read from the given data.
-	 * <p>
-	 * According to the magic (5) pattern, this will automatically calculate an offset relative to the current read
-	 * offset if required, or an absolute value otherwise.
-	 * It will also adapt the endianness of such offsets, as defined by the pattern and will lastly add all defined
-	 * offset increments.
-	 * </p>
 	 *
-	 * @param data              The data an read offset shall be found for.
-	 * @param currentReadOffset The current read offset in the given data.
+	 * @param data              The data a read offset shall be found for.
+	 * @param currentReadOffset The current read offset in the compared data.
 	 * @return The determined offset, that should be read next, to extract a value for the evaluation of the current
 	 * {@link MagicPattern}.
+	 * @throws MagicPatternException Shall be thrown for negative indirect offsets.
 	 */
-	public int getReadOffset(byte[] data, int currentReadOffset) {
-		int offset = getOffset();
-		if (getEndianType() != null) {
-			Long longOffset;
-			if (getEndianType().isReadID3Length()) {
-				longOffset = getEndianType().getEndianConverter().convertId3(
-						data, getOffset(), getEndianType().getValueByteLength()
-				);
-			} else {
-				longOffset = getEndianType().getEndianConverter().convertNumber(
-						data, getOffset(), getEndianType().getValueByteLength()
-				);
-			}
-			if (longOffset != null) {
-				offset = (int) (longOffset + getIncrementalOffset());
-			}
+	public long getReadOffset(byte[] data, int currentReadOffset) throws MagicPatternException {
+		long offset = getBaseOffset();
+		// If it is an indirect offset, read the value from data.
+		if (isIndirect()) {
+			offset = getIndirectOffset().getReadOffset(data, currentReadOffset);
 		}
 
-		if (isAddOffset()) {
+		// If it is a relative offset, apply the current read offset.
+		if (isRelative()) {
 			offset += currentReadOffset;
 		}
 		return offset;
@@ -123,86 +131,38 @@ public class MagicOffset {
 	 * @throws MagicPatternException Shall be thrown, if the parsing failed.
 	 */
 	public static MagicOffset parse(String rawDefinition) throws MagicPatternException {
-		// Filter invalid offset patterns.
-		if (rawDefinition == null || rawDefinition.isEmpty()) {
+		String processedString;
+		if (rawDefinition == null || (processedString = rawDefinition.replaceAll("\\s", "")).isEmpty()) {
 			throw new MagicPatternException("Magic pattern offset is empty.");
 		}
-
-		boolean addOffset = false;
-		String offsetString = rawDefinition;
-		// Test for leading '&' add-offset operator.
-		if (offsetString.charAt(0) == '&') {
-			if (offsetString.length() == 1) {
-				throw new MagicPatternException(String.format("Invalid/unknown offset pattern: '%s'", offsetString));
-			}
-			addOffset = true;
-			offsetString = offsetString.substring(1);
+		Matcher matcher = BASE_OFFSET_PATTERN.matcher(processedString);
+		if (!matcher.matches()) {
+			throw new MagicPatternException(String.format("Invalid/unknown offset pattern: '%s'", rawDefinition));
 		}
 
-		int offset;
-		int incrementalOffset = 0;
-		MagicEndianType endianType = null;
-		// Parse complex offset pattern.
-		if (offsetString.charAt(0) == '(') {
-			// Filter invalid offset patterns.
-			Matcher matcher = OFFSET_PATTERN.matcher(offsetString);
-			if (!matcher.matches()) {
-				throw new MagicPatternException(String.format("Invalid/unknown offset pattern: '%s'", offsetString));
-			}
-			if (matcher.group(2) == null) {
-				throw new MagicPatternException(String.format("Invalid offset type: %s", offsetString));
-			}
+		// check for relativization and indirect offset.
+		boolean relative = matcher.group(1) != null;
+		boolean indirect = matcher.group(2) != null;
+		processedString = indirect ? matcher.group(2) : matcher.group(3);
+		if (processedString == null) {
+			throw new MagicPatternException(String.format("Invalid/unknown offset pattern: '%s'", rawDefinition));
+		}
 
-			// Determine base offset value.
+		// Resolve indirect offset.
+		long baseOffset = 0;
+		MagicIndirectOffset indirectOffset = null;
+		if (indirect) {
+			indirectOffset = MagicIndirectOffset.parse(processedString);
+		}
+		// Resolve simple constant offset.
+		else {
 			try {
-				offset = Integer.decode(matcher.group(1));
+				baseOffset = Long.decode(processedString);
 			} catch (NumberFormatException ex) {
-				throw new MagicPatternException(String.format("Invalid offset number: %s", offsetString), ex);
-			}
-
-			// Determine endian type.
-			endianType = MagicEndianType.parse(matcher.group(2));
-
-			// Evaluate the optional offset operator.
-			if (matcher.group(4) != null && matcher.group(4).length() > 0) {
-				try {
-					/*
-					 * From manual: The + offset operator specifies an incremental offset, based upon the value of the last
-					 * offset. Thus, +15 indicates that the offset value is 15 bytes from the last specified offset.
-					 *
-					 * From manual: An offset operator of the form (l+R) specifies an offset that is the total of the value
-					 * of memory location specified by l and the value R.
-					 */
-					incrementalOffset = Integer.decode(matcher.group(4));
-				} catch (NumberFormatException ex) {
-					throw new MagicPatternException(String.format("invalid long add value: %s", matcher.group(4)), ex);
-				}
-				String offsetOperator = matcher.group(3);
-				if ("-".equals(offsetOperator)) {
-					/*
-					 * From manual: An offset operator of the form (l-R) specifies an offset that is calculated by
-					 * subtracting the value R from the value of memory location specified by l.
-					 */
-					incrementalOffset = -incrementalOffset;
-				} else if ("*".equals(offsetOperator)) {
-					/*
-					 * From manual: '*' offset operator specifies that the value located at the memory location following
-					 * the operator be used as the offset. Thus, *0x3C indicates that the value contained in 0x3C should be
-					 * used as the offset.
-					 */
-					offset = incrementalOffset;
-					incrementalOffset = 0;
-				}
-			}
-		} else {
-			// Parse simple offset.
-			try {
-				offset = Integer.decode(offsetString);
-			} catch (NumberFormatException e) {
-				throw new MagicPatternException(String.format("Invalid/unknown offset pattern: '%s'", offsetString));
+				throw new MagicPatternException(String.format("Invalid/unknown offset pattern: '%s'", rawDefinition));
 			}
 		}
 
-		return new MagicOffset(offset, incrementalOffset, addOffset, endianType);
+		return new MagicOffset(baseOffset, relative, indirectOffset);
 	}
 }

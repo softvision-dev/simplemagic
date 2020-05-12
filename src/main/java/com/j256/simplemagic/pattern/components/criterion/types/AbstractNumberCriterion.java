@@ -144,6 +144,9 @@ public abstract class AbstractNumberCriterion extends AbstractMagicCriterion<Num
 		if (extractor instanceof NumberExtractor) {
 			extractedValue = ((NumberExtractor) extractor).extractValue(data, currentReadOffset);
 		}
+		if (extractedValue == null) {
+			return new MagicCriterionResult<Number, NumericOperator>(this, currentReadOffset);
+		}
 		BigInteger andValue = getMagicPattern().getType().getAndValue();
 		if (getMagicPattern().getType().getAndValue() != null) {
 			extractedValue = BigInteger.valueOf(extractedValue.longValue()).and(andValue);

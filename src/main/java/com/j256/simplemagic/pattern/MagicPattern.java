@@ -199,7 +199,9 @@ public class MagicPattern {
 	 *                               to read the starting bytes.
 	 */
 	public byte[] getStartingBytes() throws MagicPatternException {
-		if (getOffset().getOffset() != 0 || getCriterion() == null) {
+		if ((getOffset().getBaseOffset() != 0 ||
+				(getOffset().isIndirect() && getOffset().getIndirectOffset().getOffset() != 0))
+				|| getCriterion() == null) {
 			return null;
 		} else {
 			return getCriterion().getStartingBytes();
@@ -241,7 +243,7 @@ public class MagicPattern {
 	 */
 	protected MatchingResult isMatch(byte[] data, int currentReadOffset, int level, MatchingResult patternResult)
 			throws IOException, MagicPatternException {
-		int offset = getOffset().getReadOffset(data, currentReadOffset);
+		int offset = (int) getOffset().getReadOffset(data, currentReadOffset);
 
 		MagicCriterionResult<?, ?> result = null;
 		MagicCriterion<?, ?> criterion = getCriterion();

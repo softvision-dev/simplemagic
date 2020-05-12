@@ -1,6 +1,7 @@
 package com.j256.simplemagic.pattern;
 
 import com.j256.simplemagic.error.MagicPatternException;
+import com.j256.simplemagic.pattern.components.offset.MagicOffsetReadType;
 
 import java.math.BigInteger;
 import java.util.regex.Matcher;
@@ -84,6 +85,37 @@ public class PatternUtils {
 		} catch (NumberFormatException ex) {
 			throw new MagicPatternException(String.format("Could not parse number from: '%s'", valueString));
 		}
+	}
+
+	/**
+	 * Read a value from the given offset, using the given {@link MagicOffsetReadType} from the given byte array.
+	 *
+	 * @param data           The byte array, that shall be read from.
+	 * @param offset         The offset from which shall be read.
+	 * @param offsetReadType The {@link MagicOffsetReadType} containing further read parameters, such as endianness byte
+	 *                       length etc.
+	 * @return The read long value. (must never return null)
+	 * @throws MagicPatternException Shall be thrown for negative offsets.
+	 */
+	public static long readIndirectOffset(byte[] data, long offset, MagicOffsetReadType offsetReadType) throws MagicPatternException {
+		if (offset < 0) {
+			throw new MagicPatternException("Erroneous indirect offset construction.");
+		}
+		Long readOffset = 0L;
+		if (offsetReadType == null || data == null) {
+			return readOffset;
+		}
+		if (offsetReadType.isReadID3Length()) {
+			readOffset = offsetReadType.getEndianConverter().convertId3(
+					data, (int) offset, offsetReadType.getValueByteLength()
+			);
+		} else {
+			readOffset = offsetReadType.getEndianConverter().convertNumber(
+					data, (int) offset, offsetReadType.getValueByteLength()
+			);
+		}
+
+		return readOffset == null ? 0 : readOffset;
 	}
 
 	/**

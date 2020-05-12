@@ -104,7 +104,7 @@ public class RegexCriterion extends AbstractMagicCriterion<String, StringOperato
 	@Override
 	public MagicCriterionResult<String, StringOperator> isMatch(byte[] data, int currentReadOffset)
 			throws IOException, MagicPatternException {
-		int readOffset = getMagicPattern().getOffset().getReadOffset(data, currentReadOffset);
+		int readOffset = (int) getMagicPattern().getOffset().getReadOffset(data, currentReadOffset);
 
 		String line = null;
 		int bytesOffset = 0;

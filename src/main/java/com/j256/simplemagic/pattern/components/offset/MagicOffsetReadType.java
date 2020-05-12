@@ -1,20 +1,38 @@
-package com.j256.simplemagic.pattern.components;
+package com.j256.simplemagic.pattern.components.offset;
 
 import com.j256.simplemagic.endian.*;
 import com.j256.simplemagic.error.MagicPatternException;
+import com.j256.simplemagic.pattern.components.MagicOffset;
 import com.j256.simplemagic.pattern.components.criterion.MagicCriterion;
 
 /**
- * The endian type as defined by a line in magic (5) format.
+ * <b>An instance of this class represents The endianness and value type as defined by an indirect offset in magic (5) format.</b>
+ * <p>
+ * As defined in the Magic(5) Manpage:
+ * </p>
+ * <p>
+ * <i>
+ * Indirect offsets are of the form: (( x [.[bislBISL]][+-][ y ]). The value of x is used as an offset in the file. A
+ * byte, id3 length, short or long is read at that offset depending on the [bislBISLm] type specifier. The capitalized
+ * types interpret the number as a big endian value, whereas the small letter versions interpret the number as a little
+ * endian value; the m type interprets the number as a middle endian (PDP-11) value.
+ * </i>
+ * </p>
+ * <p>
+ * <i>[...] The default type if one is not specified is long.</i>
+ * </p>
+ * <p>
+ * Attention: The "long" type defined here, has a length of 4 bytes.
+ * </p>
  */
-public class MagicEndianType {
+public class MagicOffsetReadType {
 
 	private final EndianType endianType;
 	private final int valueByteLength;
 	private final boolean readID3Length;
 
 	/**
-	 * Creates a new {@link MagicEndianType} as found in a {@link MagicOffset}. The endian type shall influence the
+	 * Creates a new {@link MagicOffsetReadType} as found in a {@link MagicOffset}. The endian type shall influence the
 	 * assumed endianness, read order and byte length of a value, that is read from binary data.
 	 *
 	 * @param endianType      The {@link EndianType} of data, that shall be read. A 'null' value will be treated as invalid.
@@ -22,7 +40,7 @@ public class MagicEndianType {
 	 * @param readID3Length   Whether the binary data are stored in ID3 order.
 	 * @throws MagicPatternException Invalid parameters shall cause this.
 	 */
-	public MagicEndianType(EndianType endianType, int valueByteLength, boolean readID3Length) throws MagicPatternException {
+	public MagicOffsetReadType(EndianType endianType, int valueByteLength, boolean readID3Length) throws MagicPatternException {
 		if (endianType == null || valueByteLength < 0) {
 			throw new MagicPatternException("Invalid magic endian type initialization.");
 		}
@@ -70,11 +88,11 @@ public class MagicEndianType {
 	}
 
 	/**
-	 * Parse the given raw definition to initialize the {@link MagicEndianType} instance.
+	 * Parse the given raw definition to initialize the {@link MagicOffsetReadType} instance.
 	 *
-	 * @param rawDefinition The raw definition of this {@link MagicEndianType} as a String.
+	 * @param rawDefinition The raw definition of this {@link MagicOffsetReadType} as a String.
 	 */
-	public static MagicEndianType parse(String rawDefinition) throws MagicPatternException {
+	public static MagicOffsetReadType parse(String rawDefinition) throws MagicPatternException {
 		char endianType = '\0';
 		if (rawDefinition != null && rawDefinition.length() == 1) {
 			endianType = rawDefinition.charAt(0);
@@ -84,10 +102,9 @@ public class MagicEndianType {
 		int valueByteLength;
 
 		switch (endianType) {
-			// little-endian byte
+			// byte
 			case 'b':
 			case 'B':
-				// endian doesn't really matter for 1 byte
 				readID3Length = false;
 				valueByteLength = 1;
 				break;
@@ -97,14 +114,14 @@ public class MagicEndianType {
 				readID3Length = false;
 				valueByteLength = 2;
 				break;
-			// integer
+			// id3 integer - 4 bytes
 			case 'i':
 			case 'I':
 				readID3Length = true;
 				valueByteLength = 4;
 				break;
+			// integer - 4 bytes ("long" types when the spec was written)
 			case 'm':
-				// long (4 byte)
 			case 'L':
 			case 'l':
 			default:
@@ -113,6 +130,6 @@ public class MagicEndianType {
 				break;
 		}
 
-		return new MagicEndianType(magicEndianType, valueByteLength, readID3Length);
+		return new MagicOffsetReadType(magicEndianType, valueByteLength, readID3Length);
 	}
 }
