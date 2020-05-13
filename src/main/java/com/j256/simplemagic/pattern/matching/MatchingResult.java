@@ -1,9 +1,6 @@
 package com.j256.simplemagic.pattern.matching;
 
 import com.j256.simplemagic.pattern.MagicPattern;
-import com.j256.simplemagic.pattern.PatternUtils;
-
-import static com.j256.simplemagic.pattern.PatternUtils.UNKNOWN_TYPE_NAME;
 
 /**
  * <b>An instance of this class represents a result line from the magic (5) format.</b>
@@ -27,42 +24,44 @@ import static com.j256.simplemagic.pattern.PatternUtils.UNKNOWN_TYPE_NAME;
  * The result summary of a {@link MagicPattern#isMatch(byte[])} call.
  */
 public class MatchingResult {
+
+	public static final String UNKNOWN_TYPE_NAME = "unknown";
+
 	private final StringBuilder formattedResult = new StringBuilder();
 	private MatchingState matchingState = MatchingState.NO_MATCH;
-	private String message;
+	private String rawMessage;
 	private String mimeType;
 	private int matchingLevel = 0;
 
 	/**
 	 * An instance collects and provides evaluation results of a {@link MagicPattern#isMatch(byte[])} call.
 	 *
-	 * @param message  The file type description, that has been found. (Setting to 'null' will result in a value of:
-	 *                 {@link PatternUtils#UNKNOWN_TYPE_NAME})
-	 * @param mimeType The mimeType, that has been found. (May be set to 'null')
+	 * @param rawMessage The raw and unformated file type description, that has been found. (Setting to 'null' or empty
+	 *                   String, will result in a value of: {@link #UNKNOWN_TYPE_NAME})
+	 * @param mimeType   The mimeType, that has been found. (May be set to 'null', when unspecified.)
 	 */
-	public MatchingResult(String message, String mimeType) {
-		this.message = message == null ? UNKNOWN_TYPE_NAME : message;
+	public MatchingResult(String rawMessage, String mimeType) {
+		this.rawMessage = rawMessage == null || rawMessage.trim().isEmpty() ? UNKNOWN_TYPE_NAME : rawMessage;
 		this.mimeType = mimeType;
 	}
 
 	/**
 	 * Returns the determined file type name, that has been found.
 	 *
-	 * @return The file type name, that has been found. (Must never return 'null', but may return
-	 * {@link PatternUtils#UNKNOWN_TYPE_NAME})
+	 * @return The file type name, that has been found. (Must never return 'null', but may return {@link #UNKNOWN_TYPE_NAME})
 	 */
-	public String getMessage() {
-		return message;
+	public String getRawMessage() {
+		return rawMessage;
 	}
 
 	/**
 	 * Sets the determined file type name, that has been found.
 	 *
-	 * @param message The file type name, that has been found. (Setting to 'null' will result in a value of:
-	 *                {@link PatternUtils#UNKNOWN_TYPE_NAME})
+	 * @param rawMessage The file type name, that has been found. (Setting to 'null' or empty String, will result in a
+	 *                   value of: {@link #UNKNOWN_TYPE_NAME})
 	 */
-	public void setMessage(String message) {
-		this.message = message == null ? UNKNOWN_TYPE_NAME : message;
+	public void setRawMessage(String rawMessage) {
+		this.rawMessage = rawMessage == null || rawMessage.trim().isEmpty() ? UNKNOWN_TYPE_NAME : rawMessage;
 	}
 
 	/**
@@ -118,6 +117,15 @@ public class MatchingResult {
 	 */
 	public void setMatchingState(MatchingState matchingState) {
 		this.matchingState = matchingState;
+	}
+
+	/**
+	 * Returns true if the type name is currently {@link #UNKNOWN_TYPE_NAME}.
+	 *
+	 * @return True if the type name is currently {@link #UNKNOWN_TYPE_NAME}.
+	 */
+	public boolean isUnknownTypeName() {
+		return UNKNOWN_TYPE_NAME.equals(this.rawMessage);
 	}
 
 	/**

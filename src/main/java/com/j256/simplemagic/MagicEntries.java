@@ -186,13 +186,13 @@ public class MagicEntries {
 
 			switch (result.getMatchingState()) {
 				case FULL_MATCH:
-					return new ContentInfo(result.getMessage(), result.getMimeType(), result.toString(), false);
+					return new ContentInfo(result.getRawMessage(), result.getMimeType(), result.toString(), false);
 				case PARTIAL_MATCH:
 					if (partialMatchInfo == null) {
 						// first partial match may win
 						LOGGER.trace("found partial match {}", pattern);
 						partialMatchInfo = new ContentInfo(
-								result.getMessage(), result.getMimeType(), result.toString(), true
+								result.getRawMessage(), result.getMimeType(), result.toString(), true
 						);
 						// continue to look for non-partial
 					}

@@ -52,12 +52,14 @@ import static com.j256.simplemagic.pattern.components.criterion.types.numeric.Ab
  * Attention: "test" shall be named "Criterion" for the purposes of this library.
  * </p>
  * <p>
+ * <i>
  * Some file formats contain additional information which is to be printed along with the file type or need additional
  * tests to determine the true file type. These additional tests are introduced by one or more > characters preceding
  * the offset. The number of > on the line indicates the level of the test; a line with no > at the beginning is
  * considered to be at level 0. Tests are arranged in a tree-like hierarchy: if the test on a line at level n succeeds,
  * all following tests at level n+1 are performed, and the messages printed if the tests succeed, until a line with
  * level n (or less) appears. For more complex files, one can use empty messages to get just the "if/then" effect.
+ * </i>
  * </p>
  */
 public class MagicPattern {
@@ -294,7 +296,7 @@ public class MagicPattern {
 			offset = result.getNextReadOffset();
 		}
 
-		if (getMessage().getFormatter() != null) {
+		if (!getMessage().isEmpty() && getMessage().getFormatter() != null) {
 			if (getMessage().isClearPreviousMessages()) {
 				patternResult.clear();
 			}
@@ -336,8 +338,8 @@ public class MagicPattern {
 		 * NOTE: the children will have the first opportunity to set this which makes sense since they are the most
 		 * specific.
 		 */
-		if (!UNKNOWN_TYPE_NAME.equals(getMessage().getMessage()) && UNKNOWN_TYPE_NAME.equals(patternResult.getMessage())) {
-			patternResult.setMessage(getMessage().getMessage());
+		if (!getMessage().isEmpty() && patternResult.isUnknownTypeName()) {
+			patternResult.setRawMessage(getMessage().getMessage());
 		}
 		/*
 		 * Set the mime-type if it is not set already or if we've gotten more specific in the processing of a pattern
@@ -365,7 +367,7 @@ public class MagicPattern {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("level ").append(level);
-		if (getMessage().getMessage() != null) {
+		if (!getMessage().isEmpty()) {
 			sb.append(",name '").append(getMessage().getMessage()).append('\'');
 		}
 		if (getMimeType() != null) {

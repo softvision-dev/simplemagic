@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
  */
 public class PatternUtils {
 
-	public static final String UNKNOWN_TYPE_NAME = "unknown";
 	public static final Pattern HEX_PATTERN = Pattern.compile("0[xX]([0-9a-fA-F]+)");
 
 	/**
@@ -119,7 +118,7 @@ public class PatternUtils {
 	}
 
 	/**
-	 * Pre-processes and unescapes a String based pattern.
+	 * Pre-processes and unescapes a C-String based pattern.
 	 *
 	 * @param pattern The pattern, that shall be pre-processed.
 	 * @return The processed pattern as a String.
