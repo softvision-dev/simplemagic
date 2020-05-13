@@ -48,7 +48,7 @@ public class MagicPatternTest {
 		assertException(">1   wow", "Magic pattern is incomplete and ending after type definition.");
 
 		// no value
-		assertException(">1   wow     ", "unknown magic type string: wow");
+		assertException(">1   wow     ", "Invalid/unknown magic type: wow");
 	}
 
 	@Test
@@ -61,14 +61,11 @@ public class MagicPatternTest {
 
 	@Test
 	public void testTypeString() {
-		// & part not a number
-		assertException(">1   short&a    Format", "Invalid type AND-number: a");
-
 		// no type string
-		assertException(">1   &0    Format", "Blank type string.");
+		assertException(">1   &0    Format", "Invalid/unknown magic type: &0");
 
 		// unknown matcher
-		assertException(">1   unknowntype    Format", "unknown magic type string: unknowntype");
+		assertException(">1   unknowntype    Format", "Invalid/unknown magic type: unknowntype");
 	}
 
 	@Test

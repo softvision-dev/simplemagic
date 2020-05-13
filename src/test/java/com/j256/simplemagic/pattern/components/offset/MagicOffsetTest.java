@@ -2,7 +2,7 @@ package com.j256.simplemagic.pattern.components.offset;
 
 import com.j256.simplemagic.endian.EndianType;
 import com.j256.simplemagic.error.MagicPatternException;
-import com.j256.simplemagic.pattern.MagicPattern;
+import com.j256.simplemagic.pattern.MagicOperator;
 import com.j256.simplemagic.pattern.components.MagicOffset;
 import org.junit.Test;
 
@@ -15,23 +15,11 @@ public class MagicOffsetTest {
 		return MagicOffset.parse(rawDefinition);
 	}
 
-	private void assertException(String rawDefinition, String expectedMessage) {
-		MagicPatternException exception = null;
-		// no previous line
-		try {
-			MagicPattern.parse(rawDefinition);
-		} catch (MagicPatternException ex) {
-			assertEquals(expectedMessage, ex.getMessage());
-			exception = ex;
-		}
-		assertNotNull(exception);
-	}
-
 	@Test
 	public void testOffsets() throws MagicPatternException {
 		offsetAssertions(assertNoException("&(0xef.i-0xff)"),
 				true, true, false, 0, 239, EndianType.LITTLE, 4,
-				true, MagicOffsetOperator.SUBTRACT, false, 255, null,
+				true, MagicOperator.SUBTRACT, false, 255, null,
 				4, false);
 		offsetAssertions(assertNoException("&0xef"),
 				true, false, false, 239, 0, null, 2,
@@ -43,31 +31,31 @@ public class MagicOffsetTest {
 				4, false);
 		offsetAssertions(assertNoException("(0xef.s+0xff)"),
 				false, true, false, 0, 239, EndianType.LITTLE, 2,
-				false, MagicOffsetOperator.ADD, false, 255, null,
+				false, MagicOperator.ADD, false, 255, null,
 				4, false);
 		offsetAssertions(assertNoException("&(0xef.l*0xff)"),
 				true, true, false, 0, 239, EndianType.LITTLE, 4,
-				false, MagicOffsetOperator.MULTIPLY, false, 255, null,
+				false, MagicOperator.MULTIPLY, false, 255, null,
 				4, false);
 		offsetAssertions(assertNoException("&(0xef.m/0xff)"),
 				true, true, false, 0, 239, EndianType.MIDDLE, 4,
-				false, MagicOffsetOperator.DIVIDE, false, 255, null,
+				false, MagicOperator.DIVIDE, false, 255, null,
 				4, false);
 		offsetAssertions(assertNoException("&(0xef.B&0xff)"),
 				true, true, false, 0, 239, EndianType.BIG, 1,
-				false, MagicOffsetOperator.AND, false, 255, null,
+				false, MagicOperator.AND, false, 255, null,
 				4, false);
 		offsetAssertions(assertNoException("&(0xef.S|0xff)"),
 				true, true, false, 0, 239, EndianType.BIG, 2,
-				false, MagicOffsetOperator.OR, false, 255, null,
+				false, MagicOperator.OR, false, 255, null,
 				4, false);
 		offsetAssertions(assertNoException("&(0xef.I^0xff)"),
 				true, true, false, 0, 239, EndianType.BIG, 4,
-				true, MagicOffsetOperator.XOR, false, 255, null,
+				true, MagicOperator.XOR, false, 255, null,
 				4, false);
 		offsetAssertions(assertNoException("&(&0xef.L+(-0x2))"),
 				true, true, true, 0, 239, EndianType.BIG, 4,
-				false, MagicOffsetOperator.ADD, true, -2, EndianType.LITTLE,
+				false, MagicOperator.ADD, true, -2, EndianType.LITTLE,
 				4, false);
 		offsetAssertions(assertNoException("-0xef"),
 				false, false, false, -239, 0, null, 4,
@@ -75,25 +63,25 @@ public class MagicOffsetTest {
 				4, false);
 		offsetAssertions(assertNoException("&(&-0xef.L+(-0x2))"),
 				true, true, true, 0, -239, EndianType.BIG, 4,
-				false, MagicOffsetOperator.ADD, true, -2, EndianType.LITTLE,
+				false, MagicOperator.ADD, true, -2, EndianType.LITTLE,
 				4, false);
 		offsetAssertions(assertNoException("&(&-0xef.L+(-0x2.i))"),
 				true, true, true, 0, -239, EndianType.BIG, 4,
-				false, MagicOffsetOperator.ADD, true, -2, EndianType.LITTLE,
+				false, MagicOperator.ADD, true, -2, EndianType.LITTLE,
 				4, true);
 		offsetAssertions(assertNoException("&(&-0xef.L+(-0x2.B))"),
 				true, true, true, 0, -239, EndianType.BIG, 4,
-				false, MagicOffsetOperator.ADD, true, -2, EndianType.BIG,
+				false, MagicOperator.ADD, true, -2, EndianType.BIG,
 				1, false);
 		offsetAssertions(assertNoException("&(&-0xef.L*-0x2)"),
 				true, true, true, 0, -239, EndianType.BIG, 4,
-				false, MagicOffsetOperator.MULTIPLY, false, -2, null,
+				false, MagicOperator.MULTIPLY, false, -2, null,
 				4, false);
 	}
 
 	public void offsetAssertions(MagicOffset magicOffset,
 			boolean relative, boolean indirect, boolean indirectOffsetRelative, long baseOffset, long indirectOffset,
-			EndianType offsetEndianType, int offsetByteLength, boolean readID3length, MagicOffsetOperator offsetOperator,
+			EndianType offsetEndianType, int offsetByteLength, boolean readID3length, MagicOperator offsetOperator,
 			boolean operandIndirect, long operand, EndianType operandEndianType, int operandByteLength,
 			boolean operandReadID3length) {
 		assertEquals("Different offset base value expected.",

@@ -1,14 +1,12 @@
 package com.j256.simplemagic.pattern;
 
 import com.j256.simplemagic.error.MagicPatternException;
-import com.j256.simplemagic.pattern.components.MagicFormat;
+import com.j256.simplemagic.pattern.components.MagicMessage;
 import com.j256.simplemagic.pattern.components.MagicOffset;
 import com.j256.simplemagic.pattern.components.MagicType;
 import com.j256.simplemagic.pattern.components.criterion.MagicCriterionFactory;
 import com.j256.simplemagic.pattern.components.criterion.MagicCriterionResult;
-import com.j256.simplemagic.pattern.components.criterion.MagicCriterion;
-import com.j256.simplemagic.pattern.components.criterion.operator.NumericOperator;
-import com.j256.simplemagic.pattern.components.criterion.operator.StringOperator;
+import com.j256.simplemagic.pattern.components.MagicCriterion;
 import com.j256.simplemagic.pattern.matching.MatchingResult;
 import com.j256.simplemagic.pattern.matching.MatchingState;
 import com.j256.simplemagic.logger.Logger;
@@ -19,9 +17,48 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.j256.simplemagic.pattern.PatternUtils.*;
+import static com.j256.simplemagic.pattern.components.criterion.types.numeric.AbstractNumberCriterion.NUMERIC_OPERATORS;
 
 /**
- * Representation of a line of information of the magic (5) format.
+ * <b>An instance of this class represents a line in magic (5) format.</b>
+ * <p>
+ * As defined in the Magic(5) Manpage:
+ * </p>
+ * <p>
+ * <i>
+ * This manual page documents the format of magic files as used by the file(1) command, version 5.32. The file(1)
+ * command identifies the type of a file using, among other tests, a test for whether the file contains certain
+ * ``magic patterns'' The database of these ``magic patterns'' is usually located in a binary file in
+ * /usr/share/misc/magic.mgc or a directory of source text magic pattern fragment files in /usr/share/misc/magic
+ * The database specifies what patterns are to be tested for, what message or MIME type to print if a particular
+ * pattern is found, and additional information to extract from the file.
+ * </i>
+ * </p>
+ * <p>
+ * <i>
+ * The format of the source fragment files that are used to build this database is as follows: Each line of a fragment
+ * file specifies a test to be performed. A test compares the data starting at a particular offset in the file with a
+ * byte value, a string or a numeric value. If the test succeeds, a message is printed. The line consists of the
+ * following fields:
+ * </i>
+ * <ul>
+ * <li>offset: {@link MagicOffset}</li>
+ * <li>type: {@link MagicType}</li>
+ * <li>test: {@link MagicCriterion}</li>
+ * <li>message: {@link MagicMessage}</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Attention: "test" shall be named "Criterion" for the purposes of this library.
+ * </p>
+ * <p>
+ * Some file formats contain additional information which is to be printed along with the file type or need additional
+ * tests to determine the true file type. These additional tests are introduced by one or more > characters preceding
+ * the offset. The number of > on the line indicates the level of the test; a line with no > at the beginning is
+ * considered to be at level 0. Tests are arranged in a tree-like hierarchy: if the test on a line at level n succeeds,
+ * all following tests at level n+1 are performed, and the messages printed if the tests succeed, until a line with
+ * level n (or less) appears. For more complex files, one can use empty messages to get just the "if/then" effect.
+ * </p>
  */
 public class MagicPattern {
 
@@ -30,15 +67,15 @@ public class MagicPattern {
 	private final int level;
 	private final MagicOffset offset;
 	private final MagicType type;
-	private final MagicFormat format;
-	private final MagicCriterion<?, ?> criterion;
+	private final MagicCriterion<?> criterion;
+	private final MagicMessage message;
 	private final List<MagicPattern> children = new ArrayList<MagicPattern>();
 
 	private String mimeType = null;
 	private boolean optional = false;
 
 	/**
-	 * An instance of this class stores and handles all information found in such a line, collects following higher
+	 * An instance of this class stores and handles all information found in a Magic(5) line, collects following higher
 	 * level patterns as children and offers the evaluation of the hereby defined criteria.
 	 * <p>
 	 * The compared binary data must (for most patterns, except No-op patterns) contain a specific value, of a specific
@@ -53,7 +90,7 @@ public class MagicPattern {
 	 * pattern is a full match and indeed a description of the type of binary data, that has been evaluated.
 	 * </p>
 	 * <p>
-	 * The type information of said met patterns (as defined via their {@link MagicFormat}) can therefore be collected
+	 * The type information of said met patterns (as defined via their {@link MagicMessage}) can therefore be collected
 	 * and used as the {@link MatchingResult} of {@link MagicPattern#isMatch(byte[])}.
 	 * </p>
 	 * <p>
@@ -69,19 +106,19 @@ public class MagicPattern {
 	 *                  A 'null' value will be treated as invalid.
 	 * @param criterion The {@link MagicCriterion}, that shall be used to evaluate this pattern.
 	 *                  A 'null' value will be treated as invalid.
-	 * @param format    The {@link MagicFormat} of information, that shall be applied to visualize extracted data.
+	 * @param message   The {@link MagicMessage} contains information, that shall be appended to the {@link MatchingResult}.
 	 *                  A 'null' value will be treated as invalid.
 	 * @throws MagicPatternException Invalid parameters shall cause this.
 	 */
-	public MagicPattern(int level, MagicOffset offset, MagicType type, MagicCriterion<?, ?> criterion, MagicFormat format)
+	public MagicPattern(int level, MagicOffset offset, MagicType type, MagicCriterion<?> criterion, MagicMessage message)
 			throws MagicPatternException {
-		if (level < 0 || offset == null || type == null || criterion == null || format == null) {
+		if (level < 0 || offset == null || type == null || criterion == null || message == null) {
 			throw new MagicPatternException("Invalid magic pattern initialization.");
 		}
 		this.level = level;
 		this.offset = offset;
 		this.type = type;
-		this.format = format;
+		this.message = message;
 		this.criterion = criterion;
 	}
 
@@ -120,18 +157,18 @@ public class MagicPattern {
 	 *
 	 * @return The {@link MagicCriterion} of this {@link MagicPattern} (Must never return 'null')
 	 */
-	public MagicCriterion<?, ?> getCriterion() {
+	public MagicCriterion<?> getCriterion() {
 		return criterion;
 	}
 
 	/**
-	 * Returns the {@link MagicFormat} of this {@link MagicPattern}, adding a format, that shall be applied to visualize
-	 * extracted data.
+	 * Returns the {@link MagicMessage} of this {@link MagicPattern}, containing information, that shall be appended to a
+	 * {@link MatchingResult}.
 	 *
-	 * @return The {@link MagicFormat} of this {@link MagicPattern} (Must never return 'null')
+	 * @return The {@link MagicMessage} of this {@link MagicPattern} (Must never return 'null')
 	 */
-	public MagicFormat getFormat() {
-		return format;
+	public MagicMessage getMessage() {
+		return message;
 	}
 
 	/**
@@ -220,14 +257,14 @@ public class MagicPattern {
 	 */
 	public MatchingResult isMatch(byte[] data) throws IOException, MagicPatternException {
 		return data == null ? null :
-				isMatch(data, 0, 0, new MatchingResult(getFormat().getName(), getMimeType()));
+				isMatch(data, 0, 0, new MatchingResult(getMessage().getMessage(), getMimeType()));
 	}
 
 	/**
 	 * Will evaluate this pattern for the given data and shall always return a {@link MatchingResult}, that summarizes
 	 * the evaluation's results.
-	 * This Method assumes to be run from a top-level pattern and also assumes to then be called recursively for possibly
-	 * contained child patterns.
+	 * This Method assumes to be initially run from a top-level pattern and also assumes to then be called recursively
+	 * for possibly contained child patterns.
 	 *
 	 * @param data              The data, that shall be checked, whether they match this pattern.
 	 * @param currentReadOffset The current offset in the given data. (resulting from recursions on this method.
@@ -245,8 +282,8 @@ public class MagicPattern {
 			throws IOException, MagicPatternException {
 		int offset = (int) getOffset().getReadOffset(data, currentReadOffset);
 
-		MagicCriterionResult<?, ?> result = null;
-		MagicCriterion<?, ?> criterion = getCriterion();
+		MagicCriterionResult<?> result = null;
+		MagicCriterion<?> criterion = getCriterion();
 		if (!criterion.isNoopCriterion()) {
 			result = criterion.isMatch(data, offset);
 			if (!result.isMatch()) {
@@ -257,16 +294,16 @@ public class MagicPattern {
 			offset = result.getNextReadOffset();
 		}
 
-		if (getFormat().getFormatter() != null) {
-			if (getFormat().isClearFormat()) {
+		if (getMessage().getFormatter() != null) {
+			if (getMessage().isClearPreviousMessages()) {
 				patternResult.clear();
 			}
 			// if we are appending and need a space then prepend one
-			if (getFormat().isFormatSpacePrefix() && patternResult.length() > 0) {
+			if (getMessage().isFormatSpacePrefix() && patternResult.length() > 0) {
 				patternResult.append(" ");
 			}
 
-			patternResult.append(getFormat().getFormatter().format(
+			patternResult.append(getMessage().getFormatter().format(
 					result != null ? result.getMatchingValue() :
 							getType().getExtractor().extractValue(data, offset))
 			);
@@ -299,8 +336,8 @@ public class MagicPattern {
 		 * NOTE: the children will have the first opportunity to set this which makes sense since they are the most
 		 * specific.
 		 */
-		if (!UNKNOWN_TYPE_NAME.equals(getFormat().getName()) && UNKNOWN_TYPE_NAME.equals(patternResult.getTypeName())) {
-			patternResult.setTypeName(getFormat().getName());
+		if (!UNKNOWN_TYPE_NAME.equals(getMessage().getMessage()) && UNKNOWN_TYPE_NAME.equals(patternResult.getMessage())) {
+			patternResult.setMessage(getMessage().getMessage());
 		}
 		/*
 		 * Set the mime-type if it is not set already or if we've gotten more specific in the processing of a pattern
@@ -328,8 +365,8 @@ public class MagicPattern {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("level ").append(level);
-		if (getFormat().getName() != null) {
-			sb.append(",name '").append(getFormat().getName()).append('\'');
+		if (getMessage().getMessage() != null) {
+			sb.append(",name '").append(getMessage().getMessage()).append('\'');
 		}
 		if (getMimeType() != null) {
 			sb.append(",mime '").append(getMimeType()).append('\'');
@@ -340,8 +377,8 @@ public class MagicPattern {
 					.append("', value '").append(getCriterion().getTestValue())
 					.append('\'');
 		}
-		if (getFormat().getFormatter() != null) {
-			sb.append(",format '").append(getFormat().getFormatter()).append('\'');
+		if (getMessage().getFormatter() != null) {
+			sb.append(",format '").append(getMessage().getFormatter()).append('\'');
 		}
 		return sb.toString();
 	}
@@ -417,10 +454,10 @@ public class MagicPattern {
 			endPos = rawLine.length();
 		}
 		String criterionString = rawLine.substring(startPos, endPos);
-		// Search the missing operand for isolated operators.
-		if (criterionString.length() == 1 &&
-				(NumericOperator.forOperator(criterionString.charAt(0)) != null ||
-						StringOperator.forOperator(criterionString.charAt(0)) != null)) {
+
+		// Search the missing operand for isolated numeric operators.
+		if (type.getCriterionType().isNumeric() && criterionString.length() == 1 &&
+				(MagicOperator.forOperator(criterionString.charAt(0), NUMERIC_OPERATORS) != null)) {
 			// skip any whitespace to find operand
 			startPos = findNonWhitespace(rawLine, endPos + 1);
 			// if there is no operand, then the operator is isolated and the testString is erroneous.
@@ -434,15 +471,15 @@ public class MagicPattern {
 			// the following element must be the operand, else the testString is erroneous anyway. Append it!
 			criterionString += rawLine.substring(startPos, endPos);
 		}
-		MagicCriterion<?, ?> criterion = MagicCriterionFactory.createCriterion(type.getCriterionType(), criterionString);
+		MagicCriterion<?> criterion = MagicCriterionFactory.createCriterion(type.getCriterionType(), criterionString);
 
 		// Any remaining characters are the MagicFormat.
 		startPos = findNonWhitespace(rawLine, endPos + 1);
-		MagicFormat format;
+		MagicMessage format;
 		if (startPos >= 0) {
-			format = MagicFormat.parse(type.getCriterionType(), rawLine.substring(startPos));
+			format = MagicMessage.parse(type.getCriterionType(), rawLine.substring(startPos));
 		} else {
-			format = MagicFormat.parse(type.getCriterionType(), "");
+			format = MagicMessage.parse(type.getCriterionType(), "");
 		}
 
 		MagicPattern magicPattern = new MagicPattern(level, offset, type, criterion, format);

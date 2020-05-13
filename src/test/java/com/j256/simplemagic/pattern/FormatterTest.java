@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.Date;
 
-import com.j256.simplemagic.pattern.components.formatter.types.DefaultFormatter;
+import com.j256.simplemagic.pattern.formatter.types.DefaultFormatter;
 import org.junit.Test;
 
 public class FormatterTest {

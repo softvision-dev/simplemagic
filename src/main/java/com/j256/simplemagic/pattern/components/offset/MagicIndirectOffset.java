@@ -69,9 +69,8 @@ public class MagicIndirectOffset {
 	private final long offset;
 
 	/**
-	 * Creates a new {@link MagicIndirectOffset} as found in a {@link MagicOffset}. The real offset shall be read
-	 * dynamically from the compared data: The hereby defined indirect offset is serving as an offset to read a
-	 * value, that shall serve as the actual offset.
+	 * Creates a new {@link MagicIndirectOffset} as found in a {@link MagicOffset}. The actual offset shall be read
+	 * dynamically from the compared data.
 	 *
 	 * @param offset     The indirect offset, that shall be read.
 	 * @param relative           True if the indirect offset is relative to a current read offset.

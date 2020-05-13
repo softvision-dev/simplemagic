@@ -3,7 +3,10 @@ package com.j256.simplemagic.pattern.components.criterion;
 import com.j256.simplemagic.endian.EndianType;
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.MagicPattern;
+import com.j256.simplemagic.pattern.components.MagicCriterion;
 import com.j256.simplemagic.pattern.components.criterion.types.*;
+import com.j256.simplemagic.pattern.components.criterion.types.numeric.*;
+import com.j256.simplemagic.pattern.components.criterion.types.text.*;
 
 /**
  * Creates a criterion, that is capable of evaluating values of a specific {@link CriterionType}.
@@ -26,7 +29,7 @@ public class MagicCriterionFactory {
 	 * @return A criterion fit to evaluate such values. (Must not return null, but may return a no-op criterion
 	 * {@link MagicCriterion#isNoopCriterion()})
 	 */
-	public static MagicCriterion<?, ?> createCriterion(CriterionType criterionType, String rawDefinition)
+	public static MagicCriterion<?> createCriterion(CriterionType criterionType, String rawDefinition)
 			throws MagicPatternException {
 		if (rawDefinition == null || rawDefinition.equals("x")) {
 			return new DefaultCriterion(true);

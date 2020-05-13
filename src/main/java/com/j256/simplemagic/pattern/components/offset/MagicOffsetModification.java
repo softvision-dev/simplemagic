@@ -2,6 +2,7 @@ package com.j256.simplemagic.pattern.components.offset;
 
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.MagicPattern;
+import com.j256.simplemagic.pattern.MagicOperator;
 import com.j256.simplemagic.pattern.PatternUtils;
 
 import java.util.regex.Matcher;
@@ -29,6 +30,11 @@ import java.util.regex.Pattern;
  */
 public class MagicOffsetModification {
 
+	public static final MagicOperator[] OFFSET_MODIFIERS = new MagicOperator[]{
+			MagicOperator.ADD, MagicOperator.SUBTRACT, MagicOperator.MULTIPLY, MagicOperator.DIVIDE,
+			MagicOperator.MODULO, MagicOperator.AND, MagicOperator.OR, MagicOperator.XOR
+	};
+
 	private static final Pattern OFFSET_MODIFICATION_PATTERN = Pattern.compile(
 			// Find offset modification operator: if it does exist, an operand must also exist
 			"([+\\-*%/&|^])(?:" +
@@ -43,7 +49,7 @@ public class MagicOffsetModification {
 					"(?:.([bsilmBSIL]))?(\\)" +
 					"))$");
 
-	private final MagicOffsetOperator operator;
+	private final MagicOperator operator;
 	private final long operand;
 	private final boolean operandIndirect;
 	private final MagicOffsetReadType operandReadType;
@@ -59,7 +65,7 @@ public class MagicOffsetModification {
 	 *                        be extracted. A null value will be valid for constant operands.
 	 * @throws MagicPatternException Invalid parameters shall cause this.
 	 */
-	public MagicOffsetModification(MagicOffsetOperator operator, long operand, boolean operandIndirect,
+	public MagicOffsetModification(MagicOperator operator, long operand, boolean operandIndirect,
 			MagicOffsetReadType operandReadType) throws MagicPatternException {
 		if (operator == null || (operandIndirect && operandReadType == null)) {
 			throw new MagicPatternException("Invalid offset operation initialization.");
@@ -75,7 +81,7 @@ public class MagicOffsetModification {
 	 *
 	 * @return The operator defining the operation. (Must never return null.)
 	 */
-	public MagicOffsetOperator getOperator() {
+	public MagicOperator getOperator() {
 		return operator;
 	}
 
@@ -182,7 +188,7 @@ public class MagicOffsetModification {
 		}
 
 		//Determine the offset modification operator.
-		MagicOffsetOperator operator = MagicOffsetOperator.forName(matcher.group(1));
+		MagicOperator operator = MagicOperator.forPattern(matcher.group(1), OFFSET_MODIFIERS);
 		if (operator == null) {
 			throw new MagicPatternException(String.format("Invalid/unknown operator for modification pattern: '%s'", rawDefinition));
 		}

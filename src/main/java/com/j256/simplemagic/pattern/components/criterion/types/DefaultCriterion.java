@@ -2,10 +2,10 @@ package com.j256.simplemagic.pattern.components.criterion.types;
 
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.MagicPattern;
+import com.j256.simplemagic.pattern.MagicOperator;
 import com.j256.simplemagic.pattern.components.criterion.AbstractMagicCriterion;
-import com.j256.simplemagic.pattern.components.criterion.MagicCriterion;
+import com.j256.simplemagic.pattern.components.MagicCriterion;
 import com.j256.simplemagic.pattern.components.criterion.MagicCriterionResult;
-import com.j256.simplemagic.pattern.components.criterion.operator.StringOperator;
 
 /**
  * Represents a Default criterion from a line in magic (5) format.
@@ -18,7 +18,7 @@ import com.j256.simplemagic.pattern.components.criterion.operator.StringOperator
  *
  * @author graywatson
  */
-public class DefaultCriterion extends AbstractMagicCriterion<String, StringOperator> {
+public class DefaultCriterion extends AbstractMagicCriterion<String> {
 
 	private final boolean noopCriterion;
 
@@ -35,7 +35,7 @@ public class DefaultCriterion extends AbstractMagicCriterion<String, StringOpera
 	 * @throws MagicPatternException Shall be thrown, if an invalid default operator has been set.
 	 */
 	public DefaultCriterion(boolean noopCriterion) throws MagicPatternException {
-		super(StringOperator.EQUALS);
+		super(MagicOperator.EQUALS);
 		this.noopCriterion = noopCriterion;
 	}
 
@@ -68,8 +68,8 @@ public class DefaultCriterion extends AbstractMagicCriterion<String, StringOpera
 	 * @return A {@link MagicCriterionResult} summarizing the evaluation results.
 	 */
 	@Override
-	public MagicCriterionResult<String, StringOperator> isMatch(byte[] data, int currentReadOffset) {
-		return new MagicCriterionResult<String, StringOperator>(this, currentReadOffset, "");
+	public MagicCriterionResult<String> isMatch(byte[] data, int currentReadOffset) {
+		return new MagicCriterionResult<String>(this, currentReadOffset, "");
 	}
 
 	/**

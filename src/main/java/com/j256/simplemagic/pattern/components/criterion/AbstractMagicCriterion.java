@@ -2,16 +2,17 @@ package com.j256.simplemagic.pattern.components.criterion;
 
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.MagicPattern;
-import com.j256.simplemagic.pattern.components.criterion.operator.Operator;
+import com.j256.simplemagic.pattern.MagicOperator;
+import com.j256.simplemagic.pattern.components.MagicCriterion;
 
 /**
  * Extending classes represent a criterion definition from a line in magic (5) format.
  */
-public abstract class AbstractMagicCriterion<VALUE_TYPE, OPERATOR_TYPE extends Operator>
-		implements MagicCriterion<VALUE_TYPE, OPERATOR_TYPE> {
+public abstract class AbstractMagicCriterion<VALUE_TYPE>
+		implements MagicCriterion<VALUE_TYPE> {
 
 	private MagicPattern magicPattern;
-	private OPERATOR_TYPE operator;
+	private MagicOperator operator;
 
 	/**
 	 * Creates a new {@link MagicCriterion} as found in a {@link MagicPattern}. The criterion shall define one evaluation
@@ -21,11 +22,11 @@ public abstract class AbstractMagicCriterion<VALUE_TYPE, OPERATOR_TYPE extends O
 	 * partially correct. ({@link MagicCriterion#isMatch(byte[], int)})
 	 * </p>
 	 *
-	 * @param defaultOperator The default {@link Operator} defining the operation, that must be successful, for this
+	 * @param defaultOperator The default {@link MagicOperator} defining the operation, that must be successful, for this
 	 *                        criterion	to be met. (might be replaced during parsing and must never be 'null'.)
 	 * @throws MagicPatternException Shall be thrown, if an invalid default operator has been set.
 	 */
-	public AbstractMagicCriterion(OPERATOR_TYPE defaultOperator) throws MagicPatternException {
+	public AbstractMagicCriterion(MagicOperator defaultOperator) throws MagicPatternException {
 		if (defaultOperator == null) {
 			throw new MagicPatternException("Invalid criterion initialization.");
 		}
@@ -33,13 +34,13 @@ public abstract class AbstractMagicCriterion<VALUE_TYPE, OPERATOR_TYPE extends O
 	}
 
 	/**
-	 * Returns the {@link Operator} defining the operation, that must be successful, for this criterion	to be met.
+	 * Returns the {@link MagicOperator} defining the operation, that must be successful, for this criterion	to be met.
 	 *
-	 * @return The {@link Operator} defining the operation, that must be successful, for this criterion	to be met.
+	 * @return The {@link MagicOperator} defining the operation, that must be successful, for this criterion	to be met.
 	 * (Must never return 'null'.)
 	 */
 	@Override
-	public OPERATOR_TYPE getOperator() {
+	public MagicOperator getOperator() {
 		return operator;
 	}
 
@@ -54,12 +55,12 @@ public abstract class AbstractMagicCriterion<VALUE_TYPE, OPERATOR_TYPE extends O
 	}
 
 	/**
-	 * Sets the {@link Operator} defining the operation, that must be successful, for this criterion to be met.
+	 * Sets the {@link MagicOperator} defining the operation, that must be successful, for this criterion to be met.
 	 *
-	 * @param operator The {@link Operator} defining the operation, that must be successful, for this criterion to be met.
+	 * @param operator The {@link MagicOperator} defining the operation, that must be successful, for this criterion to be met.
 	 * @throws MagicPatternException Shall be thrown, if an invalid default operator has been set.
 	 */
-	public void setOperator(OPERATOR_TYPE operator) throws MagicPatternException {
+	public void setOperator(MagicOperator operator) throws MagicPatternException {
 		if (operator == null) {
 			throw new MagicPatternException("Invalid criterion initialization.");
 		}

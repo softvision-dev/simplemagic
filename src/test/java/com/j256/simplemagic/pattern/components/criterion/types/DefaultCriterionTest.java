@@ -5,8 +5,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.MagicPattern;
-import com.j256.simplemagic.pattern.components.extractor.types.DefaultExtractor;
-import com.j256.simplemagic.pattern.components.formatter.types.DefaultFormatter;
+import com.j256.simplemagic.pattern.extractor.types.DefaultExtractor;
+import com.j256.simplemagic.pattern.formatter.types.DefaultFormatter;
 import org.junit.Test;
 
 public class DefaultCriterionTest {

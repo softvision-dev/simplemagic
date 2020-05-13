@@ -6,24 +6,42 @@ import com.j256.simplemagic.pattern.PatternUtils;
 import static com.j256.simplemagic.pattern.PatternUtils.UNKNOWN_TYPE_NAME;
 
 /**
+ * <b>An instance of this class represents a result line from the magic (5) format.</b>
+ * <p>
+ * As defined in the Magic(5) Manpage:
+ * </p>
+ * <p>
+ * <i>
+ * Each line of a fragment file specifies a test to be performed. A test compares the data starting at a particular
+ * offset in the file with a byte value, a string or a numeric value. If the test succeeds, a message is printed.
+ * </i>
+ * </p>
+ * <p>
+ * <i>
+ * The message to be printed if the comparison succeeds. If the string contains a printf(3) format specification, the
+ * value from the file (with any specified masking performed) is printed using the message as the format string.
+ * If the string begins with ``\b'' the message printed is the remainder of the string with no whitespace added before
+ * it: multiple matches are normally separated by a single space.
+ * </i>
+ * </p>
  * The result summary of a {@link MagicPattern#isMatch(byte[])} call.
  */
 public class MatchingResult {
 	private final StringBuilder formattedResult = new StringBuilder();
 	private MatchingState matchingState = MatchingState.NO_MATCH;
-	private String typeName;
+	private String message;
 	private String mimeType;
 	private int matchingLevel = 0;
 
 	/**
 	 * An instance collects and provides evaluation results of a {@link MagicPattern#isMatch(byte[])} call.
 	 *
-	 * @param typeName The file type name, that has been found. (Setting to 'null' will result in a value of:
+	 * @param message  The file type description, that has been found. (Setting to 'null' will result in a value of:
 	 *                 {@link PatternUtils#UNKNOWN_TYPE_NAME})
 	 * @param mimeType The mimeType, that has been found. (May be set to 'null')
 	 */
-	public MatchingResult(String typeName, String mimeType) {
-		this.typeName = typeName == null ? UNKNOWN_TYPE_NAME : typeName;
+	public MatchingResult(String message, String mimeType) {
+		this.message = message == null ? UNKNOWN_TYPE_NAME : message;
 		this.mimeType = mimeType;
 	}
 
@@ -33,18 +51,18 @@ public class MatchingResult {
 	 * @return The file type name, that has been found. (Must never return 'null', but may return
 	 * {@link PatternUtils#UNKNOWN_TYPE_NAME})
 	 */
-	public String getTypeName() {
-		return typeName;
+	public String getMessage() {
+		return message;
 	}
 
 	/**
 	 * Sets the determined file type name, that has been found.
 	 *
-	 * @param typeName The file type name, that has been found. (Setting to 'null' will result in a value of:
-	 *                 {@link PatternUtils#UNKNOWN_TYPE_NAME})
+	 * @param message The file type name, that has been found. (Setting to 'null' will result in a value of:
+	 *                {@link PatternUtils#UNKNOWN_TYPE_NAME})
 	 */
-	public void setTypeName(String typeName) {
-		this.typeName = typeName == null ? UNKNOWN_TYPE_NAME : typeName;
+	public void setMessage(String message) {
+		this.message = message == null ? UNKNOWN_TYPE_NAME : message;
 	}
 
 	/**
@@ -135,6 +153,7 @@ public class MatchingResult {
 	/**
 	 * Returns the String representation of this evaluation result. This shall list all file type information, that has
 	 * been collected.
+	 *
 	 * @return The String representation of this evaluation result. (Must never return 'null')
 	 */
 	@Override

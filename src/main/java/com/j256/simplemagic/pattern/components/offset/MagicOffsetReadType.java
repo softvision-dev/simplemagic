@@ -3,7 +3,7 @@ package com.j256.simplemagic.pattern.components.offset;
 import com.j256.simplemagic.endian.*;
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.components.MagicOffset;
-import com.j256.simplemagic.pattern.components.criterion.MagicCriterion;
+import com.j256.simplemagic.pattern.components.MagicCriterion;
 
 /**
  * <b>An instance of this class represents The endianness and value type as defined by an indirect offset in magic (5) format.</b>

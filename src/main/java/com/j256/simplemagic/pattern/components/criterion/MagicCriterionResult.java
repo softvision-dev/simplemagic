@@ -1,16 +1,15 @@
 package com.j256.simplemagic.pattern.components.criterion;
 
-import com.j256.simplemagic.pattern.components.criterion.operator.Operator;
+import com.j256.simplemagic.pattern.components.MagicCriterion;
 
 /**
  * The result summary of a {@link MagicCriterion#isMatch(byte[], int)} call.
  *
  * @param <VALUE_TYPE>    The extracted value's type.
- * @param <OPERATOR_TYPE> The {@link Operator}, that has been evaluated.
  */
-public class MagicCriterionResult<VALUE_TYPE, OPERATOR_TYPE extends Operator> {
+public class MagicCriterionResult<VALUE_TYPE> {
 
-	private final MagicCriterion<VALUE_TYPE, OPERATOR_TYPE> criterion;
+	private final MagicCriterion<VALUE_TYPE> criterion;
 	private final int nextReadOffset;
 	private final VALUE_TYPE matchingValue;
 
@@ -20,7 +19,7 @@ public class MagicCriterionResult<VALUE_TYPE, OPERATOR_TYPE extends Operator> {
 	 * @param criterion      The {@link MagicCriterion}, that has been evaluated.
 	 * @param nextReadOffset The suggested next read offset for following criterion evaluations.
 	 */
-	public MagicCriterionResult(MagicCriterion<VALUE_TYPE, OPERATOR_TYPE> criterion, int nextReadOffset) {
+	public MagicCriterionResult(MagicCriterion<VALUE_TYPE> criterion, int nextReadOffset) {
 		this.criterion = criterion;
 		this.nextReadOffset = nextReadOffset;
 		this.matchingValue = null;
@@ -34,7 +33,7 @@ public class MagicCriterionResult<VALUE_TYPE, OPERATOR_TYPE extends Operator> {
 	 * @param nextReadOffset The suggested next read offset for following criterion evaluations.
 	 * @param matchingValue  The value, that met the criterion.
 	 */
-	public MagicCriterionResult(MagicCriterion<VALUE_TYPE, OPERATOR_TYPE> criterion, int nextReadOffset,
+	public MagicCriterionResult(MagicCriterion<VALUE_TYPE> criterion, int nextReadOffset,
 			VALUE_TYPE matchingValue) {
 		this.criterion = criterion;
 		this.nextReadOffset = nextReadOffset;
@@ -46,7 +45,7 @@ public class MagicCriterionResult<VALUE_TYPE, OPERATOR_TYPE extends Operator> {
 	 *
 	 * @return The criterion, that caused this {@link MagicCriterionResult}.
 	 */
-	public MagicCriterion<VALUE_TYPE, OPERATOR_TYPE> getCriterion() {
+	public MagicCriterion<VALUE_TYPE> getCriterion() {
 		return criterion;
 	}
 

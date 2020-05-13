@@ -6,7 +6,6 @@ import com.j256.simplemagic.error.ErrorCallBack;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore("For now we have to skip this, sigh")
 public class MagicFileTest {
 
 	@Test
