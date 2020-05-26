@@ -3,7 +3,7 @@ package com.j256.simplemagic.pattern.components.offset;
 import com.j256.simplemagic.endian.*;
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.components.MagicOffset;
-import com.j256.simplemagic.pattern.components.MagicCriterion;
+import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterion;
 
 /**
  * <b>An instance of this class represents The endianness and value type as defined by an indirect offset in magic (5) format.</b>
@@ -12,17 +12,18 @@ import com.j256.simplemagic.pattern.components.MagicCriterion;
  * </p>
  * <p>
  * <i>
- * Indirect offsets are of the form: (( x [.[bislBISL]][+-][ y ]). The value of x is used as an offset in the file. A
- * byte, id3 length, short or long is read at that offset depending on the [bislBISLm] type specifier. The capitalized
- * types interpret the number as a big endian value, whereas the small letter versions interpret the number as a little
- * endian value; the m type interprets the number as a middle endian (PDP-11) value.
+ * Indirect offsets are of the form: (( x [[.,][bBcCeEfFgGhHiIlmsSqQ]][+-][ y ]). The value of x is used as an offset
+ * in the file. A byte, id3 length, short or long is read at that offset depending on the [bBcCeEfFgGhHiIlmsSqQ] type
+ * specifier. The value is treated as signed if “”, is specified or unsigned if “”. is specified. The capitalized types
+ * interpret the number as a big endian value, whereas the small letter versions interpret the number as a little endian
+ * value; the m type interprets the number as a middle endian (PDP-11) value.
  * </i>
  * </p>
  * <p>
  * <i>[...] The default type if one is not specified is long.</i>
  * </p>
  * <p>
- * Attention: The "long" type defined here, has a length of 4 bytes.
+ * Attention: The "long" type defined here, has a length of 4 bytes. An 8 byte value is named "quad".
  * </p>
  */
 public class MagicOffsetReadType {
@@ -105,12 +106,16 @@ public class MagicOffsetReadType {
 			// byte
 			case 'b':
 			case 'B':
+			case 'c':
+			case 'C':
 				readID3Length = false;
 				valueByteLength = 1;
 				break;
 			// short
 			case 's':
 			case 'S':
+			case 'h':
+			case 'H':
 				readID3Length = false;
 				valueByteLength = 2;
 				break;
@@ -119,6 +124,18 @@ public class MagicOffsetReadType {
 			case 'I':
 				readID3Length = true;
 				valueByteLength = 4;
+				break;
+			// quad/double - 8 bytes
+			case 'e':
+			case 'E':
+			case 'f':
+			case 'F':
+			case 'g':
+			case 'G':
+			case 'q':
+			case 'Q':
+				readID3Length = false;
+				valueByteLength = 8;
 				break;
 			// integer - 4 bytes ("long" types when the spec was written)
 			case 'm':

@@ -23,12 +23,14 @@ public class FloatExtractor extends NumberExtractor {
 	 *
 	 * @param data              The binary data a value shall be extracted from.
 	 * @param currentReadOffset The offset the value shall be read from.
+	 * @param invertEndianness  True, if the preset Endianness shall be inverted for this extraction.
 	 * @return The float, that has been extracted, or null if the extraction failed.
 	 */
 	@Override
-	public Number extractValue(byte[] data, int currentReadOffset) {
-		Long longValue = EndianConverterFactory.createEndianConverter(getEndianness())
-				.convertNumber(data, currentReadOffset, getByteLength());
+	public Number extractValue(byte[] data, int currentReadOffset, boolean invertEndianness) {
+		Long longValue = EndianConverterFactory.createEndianConverter(
+				invertEndianness ? getEndianness().getInvertedEndianType() : getEndianness()
+		).convertNumber(data, currentReadOffset, getByteLength());
 		return longValue == null ? null : Float.intBitsToFloat(longValue.intValue());
 	}
 }

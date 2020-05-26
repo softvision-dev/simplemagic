@@ -1,17 +1,18 @@
 package com.j256.simplemagic.pattern.extractor;
 
+import com.j256.simplemagic.MagicEntries;
 import com.j256.simplemagic.endian.EndianType;
 import com.j256.simplemagic.pattern.MagicPattern;
-import com.j256.simplemagic.pattern.components.criterion.types.CriterionType;
+import com.j256.simplemagic.pattern.components.operation.OperationType;
 import com.j256.simplemagic.pattern.extractor.types.*;
 
 /**
- * Creates a {@link MagicExtractor}, that is capable of extracting values for a specific {@link CriterionType}.
+ * Creates a {@link MagicExtractor}, that is capable of extracting values for a specific {@link OperationType}.
  */
 public class MagicExtractorFactory {
 
 	/**
-	 * Not instantiatable, use static factory method {@link MagicExtractorFactory#createExtractor(CriterionType)}
+	 * Not instantiatable, use static factory method {@link MagicExtractorFactory#createExtractor(OperationType)}
 	 * instead.
 	 */
 	private MagicExtractorFactory() {
@@ -19,13 +20,13 @@ public class MagicExtractorFactory {
 
 	/**
 	 * This static factory method produces a {@link MagicExtractor}, that is capable of extracting values from data for
-	 * a specific {@link CriterionType} and therefore provides the values, that may be compared, by a call to
-	 * {@link MagicPattern#isMatch(byte[])}.
+	 * a specific {@link OperationType} and therefore provides the values, that may be compared, by a call to
+	 * {@link MagicPattern#isMatch(byte[], int, MagicEntries)}.
 	 *
 	 * @param criterionType The criterion type, that determines the type of extractor, that should be used.
 	 * @return An extractor fit to extract such values. (Must not return null)
 	 */
-	public static MagicExtractor<?> createExtractor(CriterionType criterionType) {
+	public static MagicExtractor<?> createExtractor(OperationType criterionType) {
 		switch (criterionType) {
 			case PSTRING:
 				return new PascalStringExtractor();
@@ -89,11 +90,16 @@ public class MagicExtractorFactory {
 			case BIG_ENDIAN_LONG_LOCAL_DATE:
 				return new NumberExtractor(EndianType.BIG, 8);
 
-			// Many String based types implement a more complex and specialized extraction method, therefore we are using
-			// The default no-op extractor in the following cases:
+			// Many String based types implement a more complex and specialized extraction method. Instruction based
+			// types don't require an extractor at all. therefore we are using The default no-op extractor in the
+			// following cases:
 			case STRING:
 			case SEARCH:
 			case REGEX:
+			case USE:
+			case NAME:
+			case INDIRECT:
+			case DEFAULT:
 			default:
 				// Otherwise use the no-op DefaultExtractor.
 				return new DefaultExtractor();

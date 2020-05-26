@@ -43,15 +43,15 @@ public class MagicOffsetTest {
 				4, false);
 		offsetAssertions(assertNoException("&(0xef.B&0xff)"),
 				true, true, false, 0, 239, EndianType.BIG, 1,
-				false, MagicOperator.AND, false, 255, null,
+				false, MagicOperator.CONJUNCTION, false, 255, null,
 				4, false);
 		offsetAssertions(assertNoException("&(0xef.S|0xff)"),
 				true, true, false, 0, 239, EndianType.BIG, 2,
-				false, MagicOperator.OR, false, 255, null,
+				false, MagicOperator.DISJUNCTION, false, 255, null,
 				4, false);
 		offsetAssertions(assertNoException("&(0xef.I^0xff)"),
 				true, true, false, 0, 239, EndianType.BIG, 4,
-				true, MagicOperator.XOR, false, 255, null,
+				true, MagicOperator.CONTRAVALENCE, false, 255, null,
 				4, false);
 		offsetAssertions(assertNoException("&(&0xef.L+(-0x2))"),
 				true, true, true, 0, 239, EndianType.BIG, 4,

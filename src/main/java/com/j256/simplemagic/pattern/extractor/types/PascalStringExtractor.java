@@ -29,10 +29,11 @@ public class PascalStringExtractor implements MagicExtractor<String> {
 	 *
 	 * @param data              The binary data a value shall be extracted from.
 	 * @param currentReadOffset The offset the value shall be read from.
+	 * @param invertEndianness  True, if the preset Endianness shall be inverted for this extraction.
 	 * @return The String, that has been extracted, or null if the extraction failed.
 	 */
 	@Override
-	public String extractValue(byte[] data, int currentReadOffset) {
+	public String extractValue(byte[] data, int currentReadOffset, boolean invertEndianness) {
 		if (currentReadOffset >= data.length) {
 			return null;
 		}

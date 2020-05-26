@@ -32,7 +32,7 @@ public class MagicOffsetModification {
 
 	public static final MagicOperator[] OFFSET_MODIFIERS = new MagicOperator[]{
 			MagicOperator.ADD, MagicOperator.SUBTRACT, MagicOperator.MULTIPLY, MagicOperator.DIVIDE,
-			MagicOperator.MODULO, MagicOperator.AND, MagicOperator.OR, MagicOperator.XOR
+			MagicOperator.MODULO, MagicOperator.CONJUNCTION, MagicOperator.DISJUNCTION, MagicOperator.CONTRAVALENCE
 	};
 
 	private static final Pattern OFFSET_MODIFICATION_PATTERN = Pattern.compile(
@@ -156,13 +156,13 @@ public class MagicOffsetModification {
 				case MODULO:
 					modifiedOffset %= operand;
 					break;
-				case AND:
+				case CONJUNCTION:
 					modifiedOffset &= operand;
 					break;
-				case OR:
+				case DISJUNCTION:
 					modifiedOffset |= operand;
 					break;
-				case XOR:
+				case CONTRAVALENCE:
 					modifiedOffset ^= operand;
 					break;
 				default:

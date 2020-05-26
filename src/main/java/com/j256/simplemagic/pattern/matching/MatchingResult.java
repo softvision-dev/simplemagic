@@ -1,5 +1,6 @@
 package com.j256.simplemagic.pattern.matching;
 
+import com.j256.simplemagic.MagicEntries;
 import com.j256.simplemagic.pattern.MagicPattern;
 
 /**
@@ -21,7 +22,7 @@ import com.j256.simplemagic.pattern.MagicPattern;
  * it: multiple matches are normally separated by a single space.
  * </i>
  * </p>
- * The result summary of a {@link MagicPattern#isMatch(byte[])} call.
+ * The result summary of a {@link MagicPattern#isMatch(byte[], int, MagicEntries)} call.
  */
 public class MatchingResult {
 
@@ -34,7 +35,8 @@ public class MatchingResult {
 	private int matchingLevel = 0;
 
 	/**
-	 * An instance collects and provides evaluation results of a {@link MagicPattern#isMatch(byte[])} call.
+	 * An instance collects and provides evaluation results of a {@link MagicPattern#isMatch(byte[], int, MagicEntries)}
+	 * call.
 	 *
 	 * @param rawMessage The raw and unformated file type description, that has been found. (Setting to 'null' or empty
 	 *                   String, will result in a value of: {@link #UNKNOWN_TYPE_NAME})
@@ -107,7 +109,17 @@ public class MatchingResult {
 	 * actively changed.)
 	 */
 	public MatchingState getMatchingState() {
-		return matchingState;
+		return this.matchingState;
+	}
+
+	/**
+	 * Returns true, if the given matching state equals the current matching state.
+	 *
+	 * @param matchingState The matching state, that shall be checked.
+	 * @return True, if the given matching state equals the current matching state.
+	 */
+	public boolean isMatchingState(MatchingState matchingState) {
+		return this.matchingState.equals(matchingState);
 	}
 
 	/**

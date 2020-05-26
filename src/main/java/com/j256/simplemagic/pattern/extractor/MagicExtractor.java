@@ -12,9 +12,10 @@ public interface MagicExtractor<T> {
 	 *
 	 * @param data              The binary data a value shall be extracted from.
 	 * @param currentReadOffset The offset the value shall be read from.
+	 * @param invertEndianness True, if the preset Endianness shall be inverted for this extraction.
 	 * @return The extracted value, or null if the extraction failed.
 	 */
-	T extractValue(byte[] data, int currentReadOffset);
+	T extractValue(byte[] data, int currentReadOffset, boolean invertEndianness);
 
 	/**
 	 * Returns the byte length of the value, that shall be read.

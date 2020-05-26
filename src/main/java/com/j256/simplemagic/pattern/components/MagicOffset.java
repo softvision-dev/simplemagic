@@ -8,13 +8,31 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * <b>An instance of this class represents an offset definition from a line in magic (5) format.</b>
+ * <b>An instance of this class represents an offset definition from a line in magic pattern format.</b>
  * <p>
  * As defined in the Magic(5) Manpage:
  * </p>
  * <p>
  * <i>
- * Some file formats contain additional information which is to be printed along with the file type or need additional
+ * A number specifying the offset (in bytes) into the file of the data which is to be tested. This offset can be a
+ * negative number if it is:
+ * </i>
+ * </p>
+ * <p>
+ * <i>
+ * - The first direct offset of the magic entry (at continuation level 0), in which case it is interpreted an offset
+ * from end end of the file going backwards. This works only when a file descriptor to the file is available and it
+ * is a regular file.
+ * </i>
+ * </p>
+ * <p>
+ * <i>
+ * - A continuation offset relative to the end of the last up-level field (&).
+ * </i>
+ * </p>
+ * <p>
+ * <i>
+ * [...] Some file formats contain additional information which is to be printed along with the file type or need additional
  * tests to determine the true file type. These additional tests are introduced by one or more > characters preceding
  * the offset.
  * </i>
@@ -24,19 +42,19 @@ import java.util.regex.Pattern;
  * [...] Offsets do not need to be constant, but can also be read from the file being examined. If the first character
  * following the last > is a ( then the string after the parenthesis is interpreted as an indirect offset. That means
  * that the number after the parenthesis is used as an offset in the file. The value at that offset is read, and is
- * used again as an offset in the file. Indirect offsets are of the form: (( x [.[bislBISL]][+-][ y ]). The value of x
- * is used as an offset in the file. A byte, id3 length, short or long is read at that offset depending on the
- * [bislBISLm] type specifier. The capitalized types interpret the number as a big endian value, whereas the small
- * letter versions interpret the number as a little endian value; the m type interprets the number as a middle
- * endian (PDP-11) value. To that number the value of y is added and the result is used as an offset in the file.
- * The default type if one is not specified is long.
+ * used again as an offset in the file. Indirect offsets are of the form: (( x [[.,][bBcCeEfFgGhHiIlmsSqQ]][+-][ y ]).
+ * The value of x is used as an offset in the file. A byte, id3 length, short or long is read at that offset depending
+ * on the [bBcCeEfFgGhHiIlmsSqQ] type specifier. The value is treated as signed if “,”, is specified or unsigned if “.”
+ * is specified. The capitalized types interpret the number as a big endian value, whereas the small letter versions
+ * interpret the number as a little endian value; the m type interprets the number as a middle endian (PDP-11) value.
+ * To that number the value of y is added and the result is used as an offset in the file. The default type if one is
+ * not specified is long.
  * </p>
  * </i>
- * <p>
- * Attention: The actual form of an indirect offset is: (( x[.[bislBISLm]][+-*%/&|^][ y ])
- * </p>
  */
 public class MagicOffset {
+
+	//TODO: negative offsets must be implemented.
 
 	private static final Pattern BASE_OFFSET_PATTERN = Pattern.compile("^(&)?(?:(?:\\((.+)\\))|(.+))$");
 
@@ -104,13 +122,14 @@ public class MagicOffset {
 	/**
 	 * Determines the offset of a compared value, that shall be read from the given data.
 	 *
-	 * @param data              The data a read offset shall be found for.
-	 * @param currentReadOffset The current read offset in the compared data.
+	 * @param data                     The data a read offset shall be found for.
+	 * @param currentReadOffset        The current read offset in the compared data.
+	 * @param additionalIndirectOffset The base offset for indirect pattern calls.
 	 * @return The determined offset, that should be read next, to extract a value for the evaluation of the current
 	 * {@link MagicPattern}.
 	 * @throws MagicPatternException Shall be thrown for negative indirect offsets.
 	 */
-	public long getReadOffset(byte[] data, int currentReadOffset) throws MagicPatternException {
+	public long getReadOffset(byte[] data, int currentReadOffset, int additionalIndirectOffset) throws MagicPatternException {
 		long offset = getBaseOffset();
 		// If it is an indirect offset, read the value from data.
 		if (isIndirect()) {
@@ -121,7 +140,7 @@ public class MagicOffset {
 		if (isRelative()) {
 			offset += currentReadOffset;
 		}
-		return offset;
+		return offset + additionalIndirectOffset;
 	}
 
 	/**

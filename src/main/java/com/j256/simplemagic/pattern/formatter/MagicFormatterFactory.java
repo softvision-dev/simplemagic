@@ -1,6 +1,6 @@
 package com.j256.simplemagic.pattern.formatter;
 
-import com.j256.simplemagic.pattern.components.criterion.types.CriterionType;
+import com.j256.simplemagic.pattern.components.operation.OperationType;
 import com.j256.simplemagic.pattern.formatter.types.DefaultFormatter;
 import com.j256.simplemagic.pattern.formatter.types.IntegerDateFormatter;
 import com.j256.simplemagic.pattern.formatter.types.LongDateFormatter;
@@ -9,12 +9,12 @@ import com.j256.simplemagic.pattern.matching.MatchingResult;
 import java.util.TimeZone;
 
 /**
- * Creates a {@link MagicFormatter}, that is capable of formatting extracted values for a specific {@link CriterionType}.
+ * Creates a {@link MagicFormatter}, that is capable of formatting extracted values for a specific {@link OperationType}.
  */
 public class MagicFormatterFactory {
 
 	/**
-	 * Not instantiatable, use static factory method {@link MagicFormatterFactory#createFormatter(CriterionType, String)}
+	 * Not instantiatable, use static factory method {@link MagicFormatterFactory#createFormatter(OperationType, String)}
 	 * instead.
 	 */
 	private MagicFormatterFactory() {
@@ -22,14 +22,14 @@ public class MagicFormatterFactory {
 
 	/**
 	 * This static factory method produces a {@link MagicFormatter}, that is capable of formatting extracted values for
-	 * a specific {@link CriterionType} and therefore provides the result Strings, that may be appended to a
+	 * a specific {@link OperationType} and therefore provides the result Strings, that may be appended to a
 	 * {@link MatchingResult}.
 	 *
 	 * @param criterionType The criterion type, that determines the type of formatter, that should be used.
 	 * @param format        The formatting instructions, that shall be applied to extracted values.
 	 * @return A formatter fit to format such values. (Must not return null)
 	 */
-	public static MagicFormatter createFormatter(CriterionType criterionType, String format) {
+	public static MagicFormatter createFormatter(OperationType criterionType, String format) {
 		switch (criterionType) {
 			case DATE:
 			case LITTLE_ENDIAN_DATE:

@@ -43,10 +43,11 @@ public class String16Extractor implements MagicExtractor<char[]> {
 	 *
 	 * @param data              The binary data a value shall be extracted from.
 	 * @param currentReadOffset The offset the value shall be read from.
+	 * @param invertEndianness  True, if the preset Endianness shall be inverted for this extraction.
 	 * @return The String, that has been extracted, or null if the extraction failed.
 	 */
 	@Override
-	public char[] extractValue(byte[] data, int currentReadOffset) {
+	public char[] extractValue(byte[] data, int currentReadOffset, boolean invertEndianness) {
 		int len;
 		// find the 2 '\0' chars, we do the -1 to make sure we don't have odd number of bytes
 		for (len = currentReadOffset; len < data.length - 1; len += 2) {

@@ -3,7 +3,7 @@ package com.j256.simplemagic.pattern;
 import java.util.Arrays;
 
 /**
- * <b>Represents an operator as commonly defined for different parts of the magic (5) format.</b>
+ * <b>Represents an operator as commonly defined for different parts of the magic pattern format.</b>
  * <p>
  * As defined in the Magic(5) Manpage:
  * </p>
@@ -71,9 +71,9 @@ public enum MagicOperator {
 	LESS_THAN('<'),
 
 	// bitwise operators
-	AND('&'),
-	OR('|'),
-	XOR('^'),
+	CONJUNCTION('&'),
+	DISJUNCTION('|'),
+	CONTRAVALENCE('^'),
 	COMPLEMENT('~');
 
 	private final char name;

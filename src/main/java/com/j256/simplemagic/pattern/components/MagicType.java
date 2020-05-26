@@ -2,15 +2,18 @@ package com.j256.simplemagic.pattern.components;
 
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.MagicPattern;
-import com.j256.simplemagic.pattern.components.criterion.types.CriterionType;
-import com.j256.simplemagic.pattern.extractor.MagicExtractorFactory;
+import com.j256.simplemagic.pattern.components.operation.OperationType;
+import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterion;
+import com.j256.simplemagic.pattern.components.operation.instruction.MagicInstruction;
 import com.j256.simplemagic.pattern.extractor.MagicExtractor;
+import com.j256.simplemagic.pattern.extractor.MagicExtractorFactory;
+import com.j256.simplemagic.pattern.extractor.types.DefaultExtractor;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * <b>An instance of this class represents a type definition from a line in magic (5) format.</b>
+ * <b>An instance of this class represents a type definition from a line in magic pattern format.</b>
  * <p>
  * As defined in the Magic(5) Manpage:
  * </p>
@@ -20,7 +23,7 @@ import java.util.regex.Pattern;
  * </i>
  * </p>
  * <p>
- * The supported types are enumerated in: {@link CriterionType}
+ * The supported types are enumerated in: {@link OperationType}
  * </p>
  * <p>
  * <i>
@@ -43,15 +46,26 @@ import java.util.regex.Pattern;
  * that is neither. This marker may be a flag marker like '/' or an operator like '&' - and an operand. Such
  * flags/modifiers shall be collected and shall be parsed type specific elsewhere.
  * </p>
+ * <p>
+ * Attention: This library defines a type as the name of a {@link MagicOperation}.
+ * The definition above is mostly describing value types of testable criteria. This library further subdivides types in
+ * {@link MagicCriterion} and {@link MagicInstruction}. Where only criteria describe testable value types, while
+ * instructions name more complex actions, such as the definition of a named pattern, or the reference to such a named
+ * pattern.
+ * </p>
+ * <p>
+ * Attention: The single UNIX Standard types ("dC", "d1" etc.), as defined by Magic version 5.38, are currently not
+ * supported by this library.
+ * </p>
  */
 public class MagicType {
 
 	private static final Pattern TYPE_PATTERN = Pattern.compile("^(u)?([a-zA-Z0-9]+)(.*)?");
 
-	private final CriterionType criterionType;
-	private final MagicExtractor<?> extractor;
+	private final OperationType operationType;
 	private final boolean unsigned;
 	private final String flagsAndModifiers;
+	private MagicExtractor<?> extractor;
 
 	/**
 	 * Creates a new {@link MagicType} as found in a {@link MagicPattern}. The type shall influence the evaluation
@@ -60,21 +74,17 @@ public class MagicType {
 	 * The binary data must contain a matching value of the hereby defined type at a specific position, to match the pattern.
 	 * </p>
 	 *
-	 * @param criterionType     The type of criterion, that is defined by the pattern. A 'null' value will be treated as
+	 * @param operationType     The type of operation, that is defined by the pattern. A 'null' value will be treated as
 	 *                          invalid.
-	 * @param extractor         The extractor, that must be used to extract values from data, that shall be checked for a
-	 *                          match with the current pattern. A 'null' value will be treated as invalid.
 	 * @param unsigned          A value of 'true' will define compared values as unsigned.
 	 * @param flagsAndModifiers Possibly appended flags and modifiers. A 'null' value will be treated as invalid.
 	 * @throws MagicPatternException Invalid parameters shall cause this.
 	 */
-	public MagicType(CriterionType criterionType, MagicExtractor<?> extractor, boolean unsigned,
-			String flagsAndModifiers) throws MagicPatternException {
-		if (criterionType == null || extractor == null || flagsAndModifiers == null) {
+	public MagicType(OperationType operationType, boolean unsigned, String flagsAndModifiers) throws MagicPatternException {
+		if (operationType == null || flagsAndModifiers == null) {
 			throw new MagicPatternException("Invalid magic type initialization.");
 		}
-		this.criterionType = criterionType;
-		this.extractor = extractor;
+		this.operationType = operationType;
 		this.unsigned = unsigned;
 		this.flagsAndModifiers = flagsAndModifiers;
 	}
@@ -89,12 +99,12 @@ public class MagicType {
 	}
 
 	/**
-	 * Returns the {@link CriterionType}, that shall be used as a criterion.
+	 * Returns the {@link OperationType}, that shall be used.
 	 *
-	 * @return The {@link CriterionType}, that shall be used as a criterion.
+	 * @return The {@link OperationType}, that shall be used.
 	 */
-	public CriterionType getCriterionType() {
-		return criterionType;
+	public OperationType getOperationType() {
+		return operationType;
 	}
 
 	/**
@@ -108,12 +118,15 @@ public class MagicType {
 
 	/**
 	 * Returns the extractor, that must be used to extract values from data, that shall be checked for a match with the
-	 * current pattern.
+	 * current pattern. This will never return null, but may return the {@link DefaultExtractor} for types, a more
+	 * specific extractor has not been defined for. The {@link DefaultExtractor} will always "extract" an empty String.
 	 *
 	 * @return The extractor to use, to extract comparable values from data. (Must never return 'null')
 	 */
 	public MagicExtractor<?> getExtractor() {
-		return extractor;
+		return this.extractor == null ?
+				this.extractor = MagicExtractorFactory.createExtractor(getOperationType()) :
+				this.extractor;
 	}
 
 	/**
@@ -122,7 +135,7 @@ public class MagicType {
 	 * @return The byte length of values of the type.
 	 */
 	public int getByteLength() {
-		return this.extractor.getByteLength();
+		return getExtractor().getByteLength();
 	}
 
 	/**
@@ -145,13 +158,15 @@ public class MagicType {
 		String flags = matcher.group(3) == null ? "" : matcher.group(3);
 
 		// process the type string
-		CriterionType criterionType = CriterionType.forName(typeString);
-		if (criterionType == null) {
-			throw new MagicPatternException(String.format("Invalid/unknown magic type: %s", rawDefinition));
+		OperationType operationType = OperationType.forName(typeString);
+		if (operationType == null) {
+			operationType = OperationType.forName(rawDefinition);
+			if (operationType == null) {
+				throw new MagicPatternException(String.format("Invalid/unknown magic type: %s", rawDefinition));
+			}
+			unsigned = false;
 		}
 
-		MagicExtractor<?> extractor = MagicExtractorFactory.createExtractor(criterionType);
-
-		return new MagicType(criterionType, extractor, unsigned, flags);
+		return new MagicType(operationType, unsigned, flags);
 	}
 }

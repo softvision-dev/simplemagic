@@ -46,11 +46,13 @@ public class NumberExtractor implements MagicExtractor<Number> {
 	 *
 	 * @param data              The binary data a value shall be extracted from.
 	 * @param currentReadOffset The offset the value shall be read from.
+	 * @param invertEndianness  True, if the preset Endianness shall be inverted for this extraction.
 	 * @return The number, that has been extracted, or null if the extraction failed.
 	 */
 	@Override
-	public Number extractValue(byte[] data, int currentReadOffset) {
-		return EndianConverterFactory.createEndianConverter(getEndianness())
-				.convertNumber(data, currentReadOffset, getByteLength());
+	public Number extractValue(byte[] data, int currentReadOffset, boolean invertEndianness) {
+		return EndianConverterFactory.createEndianConverter(
+				invertEndianness ? getEndianness().getInvertedEndianType() : getEndianness()
+		).convertNumber(data, currentReadOffset, getByteLength());
 	}
 }

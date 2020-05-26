@@ -2,7 +2,7 @@ package com.j256.simplemagic.integration;
 
 import java.io.IOException;
 
-import com.j256.simplemagic.pattern.components.criterion.types.BaseMagicTypeTest;
+import com.j256.simplemagic.pattern.components.operation.criterion.types.BaseMagicTypeTest;
 import org.junit.Test;
 
 /**

@@ -1,12 +1,15 @@
 package com.j256.simplemagic.pattern;
 
+import com.j256.simplemagic.MagicEntries;
 import com.j256.simplemagic.error.MagicPatternException;
-import com.j256.simplemagic.pattern.components.MagicMessage;
-import com.j256.simplemagic.pattern.components.MagicOffset;
-import com.j256.simplemagic.pattern.components.MagicType;
-import com.j256.simplemagic.pattern.components.criterion.MagicCriterionFactory;
-import com.j256.simplemagic.pattern.components.criterion.MagicCriterionResult;
-import com.j256.simplemagic.pattern.components.MagicCriterion;
+import com.j256.simplemagic.pattern.components.*;
+import com.j256.simplemagic.pattern.components.operation.MagicOperationFactory;
+import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterionResult;
+import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterion;
+import com.j256.simplemagic.pattern.components.operation.instruction.types.DefaultInstruction;
+import com.j256.simplemagic.pattern.components.operation.instruction.types.IndirectInstruction;
+import com.j256.simplemagic.pattern.components.operation.instruction.MagicInstruction;
+import com.j256.simplemagic.pattern.components.operation.instruction.types.UseInstruction;
 import com.j256.simplemagic.pattern.matching.MatchingResult;
 import com.j256.simplemagic.pattern.matching.MatchingState;
 import com.j256.simplemagic.logger.Logger;
@@ -17,19 +20,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.j256.simplemagic.pattern.PatternUtils.*;
-import static com.j256.simplemagic.pattern.components.criterion.types.numeric.AbstractNumberCriterion.NUMERIC_OPERATORS;
+import static com.j256.simplemagic.pattern.components.operation.criterion.numeric.AbstractNumberCriterion.NUMERIC_OPERATORS;
 
 /**
- * <b>An instance of this class represents a line in magic (5) format.</b>
+ * <b>An instance of this class represents a line in magic pattern format.</b>
  * <p>
  * As defined in the Magic(5) Manpage:
  * </p>
  * <p>
  * <i>
- * This manual page documents the format of magic files as used by the file(1) command, version 5.32. The file(1)
+ * This manual page documents the format of magic files as used by the file(1) command, version 5.38. The file(1)
  * command identifies the type of a file using, among other tests, a test for whether the file contains certain
- * ``magic patterns'' The database of these ``magic patterns'' is usually located in a binary file in
- * /usr/share/misc/magic.mgc or a directory of source text magic pattern fragment files in /usr/share/misc/magic
+ * “magic patterns”. The database of these “magic patterns” is usually located in a binary file in
+ * /usr/share/misc/magic.mgc or a directory of source text magic pattern fragment files in /usr/share/misc/magic.
  * The database specifies what patterns are to be tested for, what message or MIME type to print if a particular
  * pattern is found, and additional information to extract from the file.
  * </i>
@@ -38,18 +41,17 @@ import static com.j256.simplemagic.pattern.components.criterion.types.numeric.Ab
  * <i>
  * The format of the source fragment files that are used to build this database is as follows: Each line of a fragment
  * file specifies a test to be performed. A test compares the data starting at a particular offset in the file with a
- * byte value, a string or a numeric value. If the test succeeds, a message is printed. The line consists of the
- * following fields:
+ * byte value, a string or a numeric value. If the test succeeds, a message is printed.
  * </i>
  * <ul>
  * <li>offset: {@link MagicOffset}</li>
  * <li>type: {@link MagicType}</li>
- * <li>test: {@link MagicCriterion}</li>
+ * <li>test: {@link MagicOperation}</li>
  * <li>message: {@link MagicMessage}</li>
  * </ul>
  * </p>
  * <p>
- * Attention: "test" shall be named "Criterion" for the purposes of this library.
+ * Attention: "test" shall be named "Operation" for the purposes of this library.
  * </p>
  * <p>
  * <i>
@@ -69,8 +71,10 @@ public class MagicPattern {
 	private final int level;
 	private final MagicOffset offset;
 	private final MagicType type;
-	private final MagicCriterion<?> criterion;
+	private final MagicOperation operation;
 	private final MagicMessage message;
+
+	private MagicPattern parent;
 	private final List<MagicPattern> children = new ArrayList<MagicPattern>();
 
 	private String mimeType = null;
@@ -81,11 +85,17 @@ public class MagicPattern {
 	 * level patterns as children and offers the evaluation of the hereby defined criteria.
 	 * <p>
 	 * The compared binary data must (for most patterns, except No-op patterns) contain a specific value, of a specific
-	 * type, at a specific offset, to match ({@link MagicPattern#isMatch(byte[])}) this pattern.
+	 * type, at a specific offset, to match ({@link MagicPattern#isMatch(byte[], int, MagicEntries)}) this pattern.
 	 * </p>
 	 * <p>
-	 * If the criterion is met for given binary data, this indicates the patterns type assumption to be at least
-	 * partially correct. ({@link MagicCriterion#isMatch(byte[], int)})
+	 * If this pattern has a {@link MagicInstruction} for it's {@link MagicOperation} (such as "name" and "use") it must
+	 * be evaluated contextually and will most likely influence other pattern executions, instead of being testable
+	 * itself.
+	 * </p>
+	 * <p>
+	 * If this pattern has a testable {@link MagicCriterion} for it's {@link MagicOperation} and if the criterion is met
+	 * for given binary data, this indicates the patterns type assumption to be at least
+	 * partially correct. ({@link MagicCriterion#isMatch(byte[], int, boolean)})
 	 * </p>
 	 * <p>
 	 * If a consecutive chain of child patterns of said pattern and therefore all their criteria are also met, then the
@@ -93,7 +103,7 @@ public class MagicPattern {
 	 * </p>
 	 * <p>
 	 * The type information of said met patterns (as defined via their {@link MagicMessage}) can therefore be collected
-	 * and used as the {@link MatchingResult} of {@link MagicPattern#isMatch(byte[])}.
+	 * and used as the {@link MatchingResult} of {@link MagicPattern#isMatch(byte[], int, MagicEntries)}.
 	 * </p>
 	 * <p>
 	 * The String representation of a {@link MatchingResult} of such an evaluation will be formatted according to the
@@ -106,22 +116,22 @@ public class MagicPattern {
 	 *                  be read from processed binary data. A 'null' value will be treated as invalid.
 	 * @param type      The {@link MagicType} of information, that shall be read from processed data.
 	 *                  A 'null' value will be treated as invalid.
-	 * @param criterion The {@link MagicCriterion}, that shall be used to evaluate this pattern.
+	 * @param operation The {@link MagicOperation}, that shall be used to evaluate this pattern.
 	 *                  A 'null' value will be treated as invalid.
 	 * @param message   The {@link MagicMessage} contains information, that shall be appended to the {@link MatchingResult}.
 	 *                  A 'null' value will be treated as invalid.
 	 * @throws MagicPatternException Invalid parameters shall cause this.
 	 */
-	public MagicPattern(int level, MagicOffset offset, MagicType type, MagicCriterion<?> criterion, MagicMessage message)
+	public MagicPattern(int level, MagicOffset offset, MagicType type, MagicOperation operation, MagicMessage message)
 			throws MagicPatternException {
-		if (level < 0 || offset == null || type == null || criterion == null || message == null) {
+		if (level < 0 || offset == null || type == null || operation == null || message == null) {
 			throw new MagicPatternException("Invalid magic pattern initialization.");
 		}
 		this.level = level;
 		this.offset = offset;
 		this.type = type;
 		this.message = message;
-		this.criterion = criterion;
+		this.operation = operation;
 	}
 
 	/**
@@ -155,12 +165,12 @@ public class MagicPattern {
 	}
 
 	/**
-	 * Returns the {@link MagicCriterion} of this {@link MagicPattern}, that shall be used to evaluate this pattern.
+	 * Returns the {@link MagicOperation} of this {@link MagicPattern}, that shall be used to evaluate this pattern.
 	 *
-	 * @return The {@link MagicCriterion} of this {@link MagicPattern} (Must never return 'null')
+	 * @return The {@link MagicOperation} of this {@link MagicPattern} (Must never return 'null')
 	 */
-	public MagicCriterion<?> getCriterion() {
-		return criterion;
+	public MagicOperation getOperation() {
+		return operation;
 	}
 
 	/**
@@ -210,6 +220,36 @@ public class MagicPattern {
 	}
 
 	/**
+	 * Returns true, if this pattern contains an instruction (such as "name" or "use") instead of a testable
+	 * criterion.
+	 *
+	 * @return true, if this pattern contains an instruction (such as "name" or "use") instead of a testable
+	 * criterion.
+	 */
+	public boolean isInstruction() {
+		return this.operation instanceof MagicInstruction;
+	}
+
+
+	/**
+	 * Returns true, if this pattern contains a testable criterion.
+	 *
+	 * @return true, if this pattern contains a testable criterion.
+	 */
+	public boolean isTest() {
+		return this.operation instanceof MagicCriterion;
+	}
+
+	public void setParent(MagicPattern parent) {
+		this.parent = parent;
+	}
+
+	@SuppressWarnings("unused")
+	public MagicPattern getParent() {
+		return parent;
+	}
+
+	/**
 	 * Returns all children of the current pattern.
 	 *
 	 * @return The children of the current pattern.
@@ -240,10 +280,10 @@ public class MagicPattern {
 	public byte[] getStartingBytes() throws MagicPatternException {
 		if ((getOffset().getBaseOffset() != 0 ||
 				(getOffset().isIndirect() && getOffset().getIndirectOffset().getOffset() != 0))
-				|| getCriterion() == null) {
+				|| getOperation() == null) {
 			return null;
 		} else {
-			return getCriterion().getStartingBytes();
+			return getOperation().getStartingBytes();
 		}
 	}
 
@@ -251,15 +291,19 @@ public class MagicPattern {
 	 * Will evaluate this pattern for the given data and shall always return a {@link MatchingResult}, that summarizes
 	 * the evaluation's results.
 	 *
-	 * @param data The data, that shall be checked, whether they match this pattern.
+	 * @param data       The data, that shall be checked, whether they match this pattern.
+	 * @param baseOffset The initial offset for indirect pattern calls.
+	 * @param entries    The MagicPattern database for named and indirect pattern calls.
 	 * @return A {@link MatchingResult} that summarizes the evaluation's results. (Must never return 'null')
 	 * @throws IOException           Shall be thrown if the given data can not be accessed.
 	 * @throws MagicPatternException Shall be thrown if this {@link MagicPattern} is malformed and the evaluation
 	 *                               could not be evaluated.
 	 */
-	public MatchingResult isMatch(byte[] data) throws IOException, MagicPatternException {
-		return data == null ? null :
-				isMatch(data, 0, 0, new MatchingResult(getMessage().getMessage(), getMimeType()));
+	public MatchingResult isMatch(byte[] data, int baseOffset, MagicEntries entries) throws IOException,
+			MagicPatternException {
+		MatchingResult result = new MatchingResult(getMessage().getMessage(), getMimeType());
+		isMatch(data, 0, baseOffset, 0, result, entries, false);
+		return data == null || entries == null ? null : result;
 	}
 
 	/**
@@ -271,31 +315,72 @@ public class MagicPattern {
 	 * @param data              The data, that shall be checked, whether they match this pattern.
 	 * @param currentReadOffset The current offset in the given data. (resulting from recursions on this method.
 	 *                          Should always be set to 0 for the initial matching call.)
+	 * @param indirectOffset    The initial offset for indirect pattern calls.
 	 * @param level             The current level of the pattern, that is evaluated. (resulting from recursions on this
 	 *                          method. Should always be set to 0 for the initial matching call of a top level pattern.)
 	 * @param patternResult     The currently stored result, that shall be translated to a {@link MatchingResult} in the
 	 *                          end. (Allows to store the results of recursive calls of this method for child patterns.)
+	 * @param entries           The MagicPattern database for named and indirect pattern calls.
 	 * @return A {@link MatchingResult} that summarizes the evaluation's results.
 	 * @throws IOException           Shall be thrown if the given data can not be accessed.
 	 * @throws MagicPatternException Shall be thrown if this {@link MagicPattern} is malformed and the evaluation
 	 *                               could not be processed.
 	 */
-	protected MatchingResult isMatch(byte[] data, int currentReadOffset, int level, MatchingResult patternResult)
+	protected boolean isMatch(byte[] data, int currentReadOffset, int indirectOffset, int level,
+			MatchingResult patternResult, MagicEntries entries, boolean invertEndianness)
 			throws IOException, MagicPatternException {
-		int offset = (int) getOffset().getReadOffset(data, currentReadOffset);
+		int offset = (int) getOffset().getReadOffset(data, currentReadOffset, indirectOffset);
 
 		MagicCriterionResult<?> result = null;
-		MagicCriterion<?> criterion = getCriterion();
-		if (!criterion.isNoopCriterion()) {
-			result = criterion.isMatch(data, offset);
-			if (!result.isMatch()) {
-				return patternResult;
-			} else if (MatchingState.NO_MATCH.equals(patternResult.getMatchingState())) {
+		boolean currentMatchingState = false;
+		MagicOperation operation = getOperation();
+
+		// If it is a "use" instruction, we shall call the hereby referenced named pattern.
+		if (isInstruction() && getOperation() instanceof UseInstruction) {
+			UseInstruction useInstruction = (UseInstruction) getOperation();
+			MagicPattern usedPattern = entries.getNamedPattern(useInstruction.getOperand());
+			if (usedPattern == null) {
+				throw new MagicPatternException(String.format("Named pattern not found for: '%s'",
+						useInstruction.getOperand()));
+			}
+			// goes recursive here
+			currentMatchingState = usedPattern.isMatch(data, 0, offset, level + 1, patternResult,
+					entries, useInstruction.isInvertEndianness());
+			if (!patternResult.isMatchingState(MatchingState.FULL_MATCH)) {
+				return currentMatchingState;
+			}
+			if (!getChildren().isEmpty()) {
 				patternResult.setMatchingState(MatchingState.PARTIAL_MATCH);
 			}
+		}
+		// If it is an "indirect" instruction, we shall restart the evaluation from the current offset.
+		else if (isInstruction() && getOperation() instanceof IndirectInstruction) {
+			//TODO implement /r
+			for (MagicPattern pattern : entries.getMagicPatterns()) {
+				pattern.isMatch(data, 0, offset, level + 1, patternResult, entries,
+						invertEndianness);
+			}
+		}
+		// If it is a testable criterion, then we shall evaluate it's results.
+		else if (!operation.isNoopCriterion() && operation instanceof MagicCriterion) {
+			result = ((MagicCriterion<?>) operation).isMatch(data, offset, invertEndianness);
+			if (!result.isMatch()) {
+				return currentMatchingState;
+			} else if (patternResult.isMatchingState(MatchingState.NO_MATCH)) {
+				patternResult.setMatchingState(MatchingState.PARTIAL_MATCH);
+			}
+			currentMatchingState = true;
 			offset = result.getNextReadOffset();
 		}
+		// If it is some sort of noop criterion, then we shall not evaluate it and default to true.
+		// (this is a mere fallback - noop criteria are mostly instructions: An instruction should have been handled above.)
+		else if (operation.isNoopCriterion()) {
+			currentMatchingState = true;
+			patternResult.setMatchingState(MatchingState.PARTIAL_MATCH);
+		}
 
+		// If we have reached this, then the current Criterion has matched.
+		// If this criterion has a message and a formatter, then format it's message and append it.
 		if (!getMessage().isEmpty() && getMessage().getFormatter() != null) {
 			if (getMessage().isClearPreviousMessages()) {
 				patternResult.clear();
@@ -307,36 +392,52 @@ public class MagicPattern {
 
 			patternResult.append(getMessage().getFormatter().format(
 					result != null ? result.getMatchingValue() :
-							getType().getExtractor().extractValue(data, offset))
+							getType().getExtractor().extractValue(data, offset, invertEndianness))
 			);
 		}
 		LOGGER.trace("matched data: {}: {}", this, patternResult);
 
+		// If it has children, we must evaluate it's descendants now recursively.
 		if (!getChildren().isEmpty()) {
 			boolean allOptional = true;
-			// run through the children to add more content-type details
-			for (MagicPattern entry : getChildren()) {
-				if (!entry.isOptional()) {
+			boolean noneMatches = true;
+			MagicPattern defaultCase = null;
+			// Run through the children to add more content-type details
+			for (MagicPattern child : getChildren()) {
+				// If the current child is a "default" instruction it does match, if all it's siblings failed.
+				// In exactly that case it must be tested later and shall only be stored for now.
+				if (child.getOperation() instanceof DefaultInstruction) {
+					defaultCase = child;
+					continue;
+				}
+				if (!child.isOptional()) {
 					allOptional = false;
 				}
-				// goes recursive here
-				entry.isMatch(data, offset, level + 1, patternResult);
-				// we continue to match to see if we can add additional children info to the name
 
-				if (allOptional) {
-					patternResult.setMatchingState(MatchingState.FULL_MATCH);
+				// goes recursive here
+				if (child.isMatch(data, offset, indirectOffset, level + 1, patternResult, entries, invertEndianness)) {
+					noneMatches = false;
 				}
+				// we continue to match to see if we can add additional children info to the name
 			}
-		} else {
+			// If all those children have been optional, their messages have already been appended accordingly.
+			// Their results however do not influence our matching state - reset it to a full match.
+			if (allOptional) {
+				patternResult.setMatchingState(MatchingState.FULL_MATCH);
+			}
+			// If none of it's siblings have matched and a default case has been defined, it is evaluated now.
+			if (noneMatches && defaultCase != null) {
+				defaultCase.isMatch(data, offset, indirectOffset, level + 1, patternResult, entries, invertEndianness);
+			}
+		}
+		// If it does not have children, the pattern chain has reached it's deepest matching descendant and therefore
+		// this chain is a full match of the current evaluation.
+		else {
 			patternResult.setMatchingState(MatchingState.FULL_MATCH);
 		}
 
 		/*
-		 * Now that we have processed this entry (either with or without children), see if we still need to annotate the
-		 * content information.
-		 *
-		 * NOTE: the children will have the first opportunity to set this which makes sense since they are the most
-		 * specific.
+		 * Now that we have processed this pattern, see if we still need to annotate the content information.
 		 */
 		if (!getMessage().isEmpty() && patternResult.isUnknownTypeName()) {
 			patternResult.setRawMessage(getMessage().getMessage());
@@ -350,7 +451,7 @@ public class MagicPattern {
 			patternResult.setMimeType(getMimeType());
 			patternResult.setMatchingLevel(level);
 		}
-		return patternResult;
+		return currentMatchingState;
 	}
 
 	/**
@@ -373,10 +474,20 @@ public class MagicPattern {
 		if (getMimeType() != null) {
 			sb.append(",mime '").append(getMimeType()).append('\'');
 		}
-		if (getCriterion().getTestValue() != null) {
-			sb.append(",test '")
-					.append(getCriterion().getOperator().name())
-					.append("', value '").append(getCriterion().getTestValue())
+		MagicCriterion<?> criterion;
+		sb.append(",type '")
+				.append(getType().getOperationType().getName())
+				.append("'");
+		if (getOperation() instanceof MagicCriterion && (criterion = (MagicCriterion<?>) getOperation()).getTestValue() != null) {
+			sb.append(",operator '")
+					.append(criterion.getOperator().name())
+					.append("', value '").append(criterion.getTestValue())
+					.append('\'');
+		} else if (getOperation() instanceof MagicInstruction) {
+			MagicInstruction instruction = (MagicInstruction) getOperation();
+			sb.append(",instruction '")
+					.append(getType().getOperationType().getName())
+					.append("', operand '").append(instruction.getOperand())
 					.append('\'');
 		}
 		if (getMessage().getFormatter() != null) {
@@ -458,7 +569,7 @@ public class MagicPattern {
 		String criterionString = rawLine.substring(startPos, endPos);
 
 		// Search the missing operand for isolated numeric operators.
-		if (type.getCriterionType().isNumeric() && criterionString.length() == 1 &&
+		if (type.getOperationType().isNumeric() && criterionString.length() == 1 &&
 				(MagicOperator.forOperator(criterionString.charAt(0), NUMERIC_OPERATORS) != null)) {
 			// skip any whitespace to find operand
 			startPos = findNonWhitespace(rawLine, endPos + 1);
@@ -473,19 +584,19 @@ public class MagicPattern {
 			// the following element must be the operand, else the testString is erroneous anyway. Append it!
 			criterionString += rawLine.substring(startPos, endPos);
 		}
-		MagicCriterion<?> criterion = MagicCriterionFactory.createCriterion(type.getCriterionType(), criterionString);
+		MagicOperation operation = MagicOperationFactory.createOperation(type.getOperationType(), criterionString);
 
 		// Any remaining characters are the MagicFormat.
 		startPos = findNonWhitespace(rawLine, endPos + 1);
 		MagicMessage format;
 		if (startPos >= 0) {
-			format = MagicMessage.parse(type.getCriterionType(), rawLine.substring(startPos));
+			format = MagicMessage.parse(type.getOperationType(), rawLine.substring(startPos));
 		} else {
-			format = MagicMessage.parse(type.getCriterionType(), "");
+			format = MagicMessage.parse(type.getOperationType(), "");
 		}
 
-		MagicPattern magicPattern = new MagicPattern(level, offset, type, criterion, format);
-		criterion.parse(magicPattern, criterionString);
+		MagicPattern magicPattern = new MagicPattern(level, offset, type, operation, format);
+		operation.parse(magicPattern, criterionString);
 		return magicPattern;
 	}
 }

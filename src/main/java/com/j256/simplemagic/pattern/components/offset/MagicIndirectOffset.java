@@ -16,14 +16,15 @@ import java.util.regex.Pattern;
  * <p>
  * <i>
  * Offsets do not need to be constant, but can also be read from the file being examined. If the first character
- * following the last > is a ( then the string after the parenthesis is interpreted as an indirect offset. That
- * means that the number after the parenthesis is used as an offset in the file. The value at that offset is read,
- * and is used again as an offset in the file. Indirect offsets are of the form: (( x [.[bislBISL]][+-][ y ]).
- * The value of x is used as an offset in the file. A byte, id3 length, short or long is read at that offset
- * depending on the [bislBISLm] type specifier. The capitalized types interpret the number as a big endian value,
- * whereas the small letter versions interpret the number as a little endian value; the m type interprets the
- * number as a middle endian (PDP-11) value. To that number the value of y is added and the result is used as an
- * offset in the file. The default type if one is not specified is long.
+ * following the last > is a ( then the string after the parenthesis is interpreted as an indirect offset. That means
+ * that the number after the parenthesis is used as an offset in the file. The value at that offset is read, and is
+ * used again as an offset in the file. Indirect offsets are of the form: (( x [[.,][bBcCeEfFgGhHiIlLmsSqQ]][+-][ y ]).
+ * The value of x is used as an offset in the file. A byte, id3 length, short or long is read at that offset depending
+ * on the [bBcCeEfFgGhHiIlmsSqQ] type specifier. The value is treated as signed if “”, is specified or unsigned if “”.
+ * is specified. The capitalized types interpret the number as a big endian value, whereas the small letter versions
+ * interpret the number as a little endian value; the m type interprets the number as a middle endian (PDP-11) value.
+ * To that number the value of y is added and the result is used as an offset in the file. The default type if one is
+ * not specified is long.
  * </i>
  * </p>
  * <p>
@@ -48,10 +49,14 @@ import java.util.regex.Pattern;
  * </ul>
  * </p>
  * <p>
- * Attention: The actual form of an indirect offset is: (( x[.[bislBISLm]][+-*%/&|^][ y ])
+ * Attention: The hereby defined, actual and complete form of offsets is: ((x[.[bBcCeEfFgGhHiIlmsSqQ]][+-*%/&|^][y])
  * </p>
  */
 public class MagicIndirectOffset {
+
+	//TODO: signum of offsets (. and ,) must be implemented
+	//TODO: Indirect offsets can have Quad length (8 bytes) for file(1) magic patterns. Integer based byte arrays may not be viable anymore.
+	//TODO: Negative Offsets can be relative to the eof - a size limitation for the processed data may not be viable anymore.
 
 	private static final Pattern INDIRECT_OFFSET_PATTERN = Pattern.compile(
 			// Find inner relativization marker: optional
@@ -59,7 +64,7 @@ public class MagicIndirectOffset {
 					// Find base offset (always a numeric value): must exist
 					"(?:(-?[0-9a-fA-FxX]+)|(-?\\d+))" +
 					// Find offset type and endianness: optional, default: ".l"
-					"(?:.([bislBISLm]))?" +
+					"(?:.([bBcCeEfFgGhHiIlLmsSqQ]))?" +
 					// Find offset modification operation: optional
 					"(.+)?$");
 
@@ -72,7 +77,7 @@ public class MagicIndirectOffset {
 	 * Creates a new {@link MagicIndirectOffset} as found in a {@link MagicOffset}. The actual offset shall be read
 	 * dynamically from the compared data.
 	 *
-	 * @param offset     The indirect offset, that shall be read.
+	 * @param offset             The indirect offset, that shall be read.
 	 * @param relative           True if the indirect offset is relative to a current read offset.
 	 * @param offsetReadType     Determines the endianness, byte length and read order of the value that shall be extracted
 	 *                           as the actual offset. A null value will be treated as invalid.
@@ -188,6 +193,10 @@ public class MagicIndirectOffset {
 		// Determine the optional modification operation.
 		MagicOffsetModification offsetModificationOperation = null;
 		if (matcher.group(5) != null) {
+			if (matcher.group(5).startsWith(".") && matcher.group(5).length() >= 2) {
+				throw new MagicPatternException(String.format("Invalid/unknown indirect offset read type: '%s%s'",
+						matcher.group(5).charAt(0), matcher.group(5).charAt(1)));
+			}
 			offsetModificationOperation = MagicOffsetModification.parse(matcher.group(5));
 		}
 

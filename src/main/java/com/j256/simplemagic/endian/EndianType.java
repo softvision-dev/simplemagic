@@ -10,11 +10,11 @@ public enum EndianType {
 	/**
 	 * big endian, also called network byte order (motorola 68k)
 	 */
-	BIG('B', 'S', 'I', 'L'),
+	BIG('B', 'S', 'I', 'L', 'Q', 'C', 'E', 'F', 'G', 'H'),
 	/**
 	 * little endian (x86)
 	 */
-	LITTLE('b', 's', 'i', 'l'),
+	LITTLE('b', 's', 'i', 'l', 'q', 'c', 'e', 'f', 'g', 'h'),
 	/**
 	 * old PDP11 byte order
 	 */
@@ -42,6 +42,22 @@ public enum EndianType {
 	 */
 	public char[] getNames() {
 		return names;
+	}
+
+	/**
+	 * Returns the inverted endian type.
+	 *
+	 * @return The inverted endian type.
+	 */
+	public EndianType getInvertedEndianType() {
+		switch (this) {
+			case BIG:
+				return LITTLE;
+			case LITTLE:
+				return BIG;
+			default:
+				return this;
+		}
 	}
 
 	/**

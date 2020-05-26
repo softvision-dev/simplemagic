@@ -5,12 +5,15 @@ import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.logger.Logger;
 import com.j256.simplemagic.logger.LoggerFactory;
 import com.j256.simplemagic.pattern.MagicPattern;
+import com.j256.simplemagic.pattern.components.operation.instruction.types.NameInstruction;
 import com.j256.simplemagic.pattern.matching.MatchingResult;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.j256.simplemagic.pattern.PatternUtils.findNonWhitespace;
 import static com.j256.simplemagic.pattern.PatternUtils.findWhitespaceWithoutEscape;
@@ -20,16 +23,14 @@ public class MagicEntries {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MagicEntries.class);
 
 	private static final int MAX_LEVELS = 20;
-	private static final int FIRST_BYTE_LIST_SIZE = 256;
 
 	// Definition extensions:
 	private static final String MIME_TYPE_LINE = "!:mime";
 	private static final String OPTIONAL_LINE = "!:optional";
 
 	private final List<MagicPattern> magicPatterns = new ArrayList<MagicPattern>();
-	//TODO: replace this array of generic types.
-	@SuppressWarnings("unchecked")
-	private final List<MagicPattern>[] firstByteEntryLists = new ArrayList[FIRST_BYTE_LIST_SIZE];
+	private final Map<Integer, List<MagicPattern>> firstByteEntryLists = new HashMap<Integer, List<MagicPattern>>();
+	private final Map<String, MagicPattern> namedPatterns = new HashMap<String, MagicPattern>();
 
 	public MagicEntries() {
 	}
@@ -104,6 +105,15 @@ public class MagicEntries {
 						);
 					}
 
+					if (pattern.isInstruction() && pattern.getOperation() instanceof NameInstruction) {
+						NameInstruction nameInstruction = (NameInstruction) pattern.getOperation();
+						String name = nameInstruction.getOperand();
+						if (this.namedPatterns.containsKey(name)) {
+							throw new MagicPatternException(String.format("Name collision for named pattern: '%s'", name));
+						} else {
+							this.namedPatterns.put(name, pattern);
+						}
+					}
 					if (level == 0) {
 						// top level entry
 						this.magicPatterns.add(pattern);
@@ -113,7 +123,9 @@ public class MagicEntries {
 						);
 					} else {
 						// we are a child of the one above us
-						levelParents[level - 1].addChild(pattern);
+						MagicPattern parent = levelParents[level - 1];
+						parent.addChild(pattern);
+						pattern.setParent(parent);
 					}
 					levelParents[level] = pattern;
 					previousPattern = pattern;
@@ -141,11 +153,11 @@ public class MagicEntries {
 			if (startingBytes == null || startingBytes.length == 0) {
 				continue;
 			}
-			int index = (0xFF & startingBytes[0]);
-			if (firstByteEntryLists[index] == null) {
-				firstByteEntryLists[index] = new ArrayList<MagicPattern>();
+			int key = (0xFF & startingBytes[0]);
+			if (!firstByteEntryLists.containsKey(key)) {
+				firstByteEntryLists.put(key, new ArrayList<MagicPattern>());
 			}
-			firstByteEntryLists[index].add(pattern);
+			firstByteEntryLists.get(key).add(pattern);
 			/*
 			 * We put an entry in the first-byte list but need to leave it in the main list because there may be
 			 * optional characters or != or > comparisons in the match
@@ -158,9 +170,9 @@ public class MagicEntries {
 			return ContentInfo.EMPTY_INFO;
 		}
 		// first do the start byte ones
-		int index = (0xFF & bytes[0]);
-		if (index < firstByteEntryLists.length && firstByteEntryLists[index] != null) {
-			ContentInfo info = findMatch(bytes, firstByteEntryLists[index]);
+		int key = (0xFF & bytes[0]);
+		if (firstByteEntryLists.containsKey(key)) {
+			ContentInfo info = findMatch(bytes, firstByteEntryLists.get(key));
 			if (info != null) {
 				// this seems to be right to return even if only a partial match here
 				return info;
@@ -169,12 +181,12 @@ public class MagicEntries {
 		return findMatch(bytes, magicPatterns);
 	}
 
-	private ContentInfo findMatch(byte[] bytes, List<MagicPattern> entryList) {
+	public ContentInfo findMatch(byte[] bytes, List<MagicPattern> entryList) {
 		ContentInfo partialMatchInfo = null;
 		for (MagicPattern pattern : entryList) {
 			MatchingResult result;
 			try {
-				result = pattern.isMatch(bytes);
+				result = pattern.isMatch(bytes, 0, this);
 			} catch (IOException e) {
 				continue;
 			} catch (MagicPatternException e) {
@@ -206,5 +218,23 @@ public class MagicEntries {
 			LOGGER.trace("returning partial match {}", partialMatchInfo);
 			return partialMatchInfo;
 		}
+	}
+
+	/**
+	 * Returns a pattern for the given name.
+	 *
+	 * @param name The name a pattern shall be found for.
+	 * @return The named pattern.
+	 * @throws MagicPatternException Shall be thrown if a pattern has not been defined for the given name.
+	 */
+	public MagicPattern getNamedPattern(String name) throws MagicPatternException {
+		if (!namedPatterns.containsKey(name)) {
+			throw new MagicPatternException(String.format("A referenced pattern name is unknown: '%s'", name));
+		}
+		return namedPatterns.get(name);
+	}
+
+	public List<MagicPattern> getMagicPatterns() {
+		return magicPatterns;
 	}
 }

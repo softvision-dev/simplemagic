@@ -8,12 +8,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Provides static utility methods, that can be used as a basic toolkit to parse magic (5) patterns or parts of such
+ * Provides static utility methods, that can be used as a basic toolkit to parse magic patterns or parts of such
  * patterns.
  */
 public class PatternUtils {
 
-	public static final Pattern HEX_PATTERN = Pattern.compile("0[xX]([0-9a-fA-F]+)");
+	public static final Pattern HEX_PATTERN = Pattern.compile("0[xX]([0-9a-fA-F]+).*");
 
 	/**
 	 * As methods shall be provided as static utility methods, the instantiation of this class is forbidden.
@@ -118,12 +118,12 @@ public class PatternUtils {
 	}
 
 	/**
-	 * Pre-processes and unescapes a C-String based pattern.
+	 * Pre-processes and escapes a C-String based pattern.
 	 *
 	 * @param pattern The pattern, that shall be pre-processed.
 	 * @return The processed pattern as a String.
 	 */
-	public static String unescapePattern(String pattern) {
+	public static String escapePattern(String pattern) {
 		int index = pattern.indexOf('\\');
 		if (index < 0) {
 			return pattern;

@@ -23,10 +23,11 @@ public class Id3Extractor extends NumberExtractor {
 	 *
 	 * @param data              The binary data a value shall be extracted from.
 	 * @param currentReadOffset The offset the value shall be read from.
+	 * @param invertEndianness  True, if the preset Endianness shall be inverted for this extraction.
 	 * @return The ID3 integer, that has been extracted, or null if the extraction failed.
 	 */
 	@Override
-	public Number extractValue(byte[] data, int currentReadOffset) {
+	public Number extractValue(byte[] data, int currentReadOffset, boolean invertEndianness) {
 		// because we only use the lower 7-bits of each byte, we need to copy into a local byte array
 		int bytesPerType = getByteLength();
 		byte[] sevenBitBytes = new byte[bytesPerType];
@@ -34,7 +35,8 @@ public class Id3Extractor extends NumberExtractor {
 			sevenBitBytes[i] = (byte) (data[currentReadOffset + i] & 0x7F);
 		}
 		// because we've copied into a local array, we use the 0 offset
-		return EndianConverterFactory.createEndianConverter(getEndianness())
-				.convertNumber(sevenBitBytes, 0, bytesPerType);
+		return EndianConverterFactory.createEndianConverter(
+				invertEndianness ? getEndianness().getInvertedEndianType() : getEndianness()
+		).convertNumber(sevenBitBytes, 0, bytesPerType);
 	}
 }
