@@ -79,10 +79,24 @@ public interface MagicCriterion<VALUE_TYPE> extends MagicOperation {
 	 *
 	 * @return The value, that must be matched.
 	 */
-	VALUE_TYPE getTestValue();
+	VALUE_TYPE getExpectedValue();
 
 	/**
-	 * The operator, that shall compare the predefined test value ({@link MagicCriterion#getTestValue()}) to an extracted
+	 * Returns the value, that is actually found in the data at the expected position. May not return null directly,
+	 * wrap 'null' value using {@link ExtractedValue} instead.
+	 *
+	 * @param data              The binary data, that shall be checked whether they match this criterion.
+	 * @param currentReadOffset The initial offset in the given data.
+	 * @param length            The value length in bytes. (-1 if no length shall be given.)
+	 * @param invertEndianness  Whether the currently determined endianness shall be inverted.
+	 * @return The value, that shall match the criterion.
+	 * @throws MagicPatternException Shall be thrown, when extracting the value failed.
+	 */
+	ExtractedValue<VALUE_TYPE> getActualValue(byte[] data, int currentReadOffset, int length, boolean invertEndianness)
+			throws MagicPatternException;
+
+	/**
+	 * The operator, that shall compare the predefined test value ({@link MagicCriterion#getExpectedValue()}) to an extracted
 	 * value.
 	 *
 	 * @return The operator, that defines the matching operation.
@@ -95,6 +109,7 @@ public interface MagicCriterion<VALUE_TYPE> extends MagicOperation {
 	 *
 	 * @param data              The binary data, that shall be checked whether they match this criterion.
 	 * @param currentReadOffset The initial offset in the given data.
+	 * @param invertEndianness  Whether the currently determined endianness shall be inverted.
 	 * @return A {@link MagicCriterionResult} summarizing the evaluation results.
 	 * @throws IOException           Shall be thrown, if accessing the data failed.
 	 * @throws MagicPatternException Shall be thrown, if the evaluation failed (possibly due to a malformed criterion.)

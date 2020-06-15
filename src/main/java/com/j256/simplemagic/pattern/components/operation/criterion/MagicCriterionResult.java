@@ -3,21 +3,25 @@ package com.j256.simplemagic.pattern.components.operation.criterion;
 /**
  * The result summary of a {@link MagicCriterion#isMatch(byte[], int, boolean)} call.
  *
- * @param <VALUE_TYPE>    The extracted value's type.
+ * @param <VALUE_TYPE> The extracted value's type.
  */
 public class MagicCriterionResult<VALUE_TYPE> {
 
 	private final MagicCriterion<VALUE_TYPE> criterion;
 	private final int nextReadOffset;
 	private final VALUE_TYPE matchingValue;
+	private final boolean match;
 
 	/**
-	 * Constructor to initialize a failed {@link MagicCriterionResult} as a result of {@link MagicCriterion#isMatch(byte[], int, boolean)}.
+	 * Constructor to initialize a successfull {@link MagicCriterionResult} as a result of
+	 * {@link MagicCriterion#isMatch(byte[], int, boolean)}.
 	 *
+	 * @param match          True, if the criterion is met.
 	 * @param criterion      The {@link MagicCriterion}, that has been evaluated.
 	 * @param nextReadOffset The suggested next read offset for following criterion evaluations.
 	 */
-	public MagicCriterionResult(MagicCriterion<VALUE_TYPE> criterion, int nextReadOffset) {
+	public MagicCriterionResult(boolean match, MagicCriterion<VALUE_TYPE> criterion, int nextReadOffset) {
+		this.match = match;
 		this.criterion = criterion;
 		this.nextReadOffset = nextReadOffset;
 		this.matchingValue = null;
@@ -27,12 +31,14 @@ public class MagicCriterionResult<VALUE_TYPE> {
 	 * Constructor to initialize a successfull {@link MagicCriterionResult} as a result of
 	 * {@link MagicCriterion#isMatch(byte[], int, boolean)}.
 	 *
+	 * @param match          True, if the criterion is met.
 	 * @param criterion      The {@link MagicCriterion}, that has been evaluated.
 	 * @param nextReadOffset The suggested next read offset for following criterion evaluations.
 	 * @param matchingValue  The value, that met the criterion.
 	 */
-	public MagicCriterionResult(MagicCriterion<VALUE_TYPE> criterion, int nextReadOffset,
+	public MagicCriterionResult(boolean match, MagicCriterion<VALUE_TYPE> criterion, int nextReadOffset,
 			VALUE_TYPE matchingValue) {
+		this.match = match;
 		this.criterion = criterion;
 		this.nextReadOffset = nextReadOffset;
 		this.matchingValue = matchingValue;
@@ -72,6 +78,6 @@ public class MagicCriterionResult<VALUE_TYPE> {
 	 * @return True, if the causing {@link MagicCriterion} has been met.
 	 */
 	public boolean isMatch() {
-		return matchingValue != null;
+		return match;
 	}
 }

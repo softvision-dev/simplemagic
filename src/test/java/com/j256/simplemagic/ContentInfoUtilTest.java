@@ -32,7 +32,6 @@ public class ContentInfoUtilTest {
 
 	private static final File OUTPUT_TEST_DIR = new File("target/" + ContentInfoUtilTest.class.getSimpleName());
 
-	// TODO: expectations changed - current implementation is less accurate for some file formats?
 	// TODO: Add missing rules, reevaluate detailed tests later - add further tests - test 5.38 patterns.
 
 	/**

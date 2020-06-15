@@ -96,7 +96,8 @@ public class PatternUtils {
 	 * @return The read long value. (must never return null)
 	 * @throws MagicPatternException Shall be thrown for negative offsets.
 	 */
-	public static long readIndirectOffset(byte[] data, long offset, MagicOffsetReadType offsetReadType) throws MagicPatternException {
+	public static long readIndirectOffset(byte[] data, long offset, MagicOffsetReadType offsetReadType)
+			throws MagicPatternException {
 		if (offset < 0) {
 			throw new MagicPatternException("Erroneous indirect offset construction.");
 		}

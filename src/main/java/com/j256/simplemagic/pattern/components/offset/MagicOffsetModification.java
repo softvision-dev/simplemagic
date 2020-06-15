@@ -124,7 +124,8 @@ public class MagicOffsetModification {
 	 * {@link MagicPattern}.
 	 * @throws MagicPatternException Shall be thrown for negative offsets.
 	 */
-	public long applyModificationToOffset(byte[] data, long indirectStartOffset, long actualOffset) throws MagicPatternException {
+	public long applyModificationToOffset(byte[] data, long indirectStartOffset, long actualOffset)
+			throws MagicPatternException {
 		long modifiedOffset = actualOffset;
 		// Apply modification operation, if necessary.
 		if (getOperator() != null) {
@@ -184,13 +185,17 @@ public class MagicOffsetModification {
 		}
 		Matcher matcher = OFFSET_MODIFICATION_PATTERN.matcher(rawDefinition);
 		if (!matcher.matches()) {
-			throw new MagicPatternException(String.format("Invalid/unknown offset modification pattern: '%s'", rawDefinition));
+			throw new MagicPatternException(
+					String.format("Invalid/unknown offset modification pattern: '%s'", rawDefinition)
+			);
 		}
 
 		//Determine the offset modification operator.
 		MagicOperator operator = MagicOperator.forPattern(matcher.group(1), OFFSET_MODIFIERS);
 		if (operator == null) {
-			throw new MagicPatternException(String.format("Invalid/unknown operator for modification pattern: '%s'", rawDefinition));
+			throw new MagicPatternException(
+					String.format("Invalid/unknown operator for modification pattern: '%s'", rawDefinition)
+			);
 		}
 
 		// When enclosed in '(' and ')' this operand is indirect and shall be read from data.
@@ -209,7 +214,9 @@ public class MagicOffsetModification {
 			// Determine endianness, byte length and read order of an indirect operand.
 			operandReadType = MagicOffsetReadType.parse(matcher.group(7));
 		} catch (NumberFormatException ex) {
-			throw new MagicPatternException(String.format("Invalid/unknown offset modification operand: '%s'", rawDefinition));
+			throw new MagicPatternException(
+					String.format("Invalid/unknown offset modification operand: '%s'", rawDefinition)
+			);
 		}
 
 		// Construct and return the new instance.

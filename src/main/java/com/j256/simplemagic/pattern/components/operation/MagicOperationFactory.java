@@ -72,7 +72,7 @@ public class MagicOperationFactory {
 			case LONG_LOCAL_DATE:
 				return new LongCriterion(EndianType.NATIVE);
 
-			case LITTLE_ENDIAN_TWO_BYTE_STRING:
+			case LITTLE_ENDIAN_UTF16_STRING:
 				return new String16Criterion(EndianType.LITTLE);
 			case LITTLE_ENDIAN_SHORT:
 				return new ShortCriterion(EndianType.LITTLE);
@@ -96,7 +96,7 @@ public class MagicOperationFactory {
 			case MIDDLE_ENDIAN_LOCAL_DATE:
 				return new IntegerCriterion(EndianType.MIDDLE);
 
-			case BIG_ENDIAN_TWO_BYTE_STRING:
+			case BIG_ENDIAN_UTF16_STRING:
 				return new String16Criterion(EndianType.BIG);
 			case BIG_ENDIAN_SHORT:
 				return new ShortCriterion(EndianType.BIG);

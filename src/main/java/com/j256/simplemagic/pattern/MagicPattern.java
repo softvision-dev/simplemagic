@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.j256.simplemagic.pattern.PatternUtils.*;
-import static com.j256.simplemagic.pattern.components.operation.criterion.numeric.AbstractNumberCriterion.NUMERIC_OPERATORS;
+import static com.j256.simplemagic.pattern.components.operation.criterion.numeric.AbstractNumericCriterion.NUMERIC_OPERATORS;
 
 /**
  * <b>An instance of this class represents a line in magic pattern format.</b>
@@ -391,9 +391,8 @@ public class MagicPattern {
 			}
 
 			patternResult.append(getMessage().getFormatter().format(
-					result != null ? result.getMatchingValue() :
-							getType().getExtractor().extractValue(data, offset, invertEndianness))
-			);
+					result != null ? result.getMatchingValue() : ""
+			));
 		}
 		LOGGER.trace("matched data: {}: {}", this, patternResult);
 
@@ -478,10 +477,12 @@ public class MagicPattern {
 		sb.append(",type '")
 				.append(getType().getOperationType().getName())
 				.append("'");
-		if (getOperation() instanceof MagicCriterion && (criterion = (MagicCriterion<?>) getOperation()).getTestValue() != null) {
+		if (getOperation() instanceof MagicCriterion &&
+				(criterion = (MagicCriterion<?>) getOperation()).getExpectedValue() != null
+		) {
 			sb.append(",operator '")
 					.append(criterion.getOperator().name())
-					.append("', value '").append(criterion.getTestValue())
+					.append("', value '").append(criterion.getExpectedValue())
 					.append('\'');
 		} else if (getOperation() instanceof MagicInstruction) {
 			MagicInstruction instruction = (MagicInstruction) getOperation();

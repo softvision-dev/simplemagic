@@ -41,7 +41,8 @@ public class MagicOffsetReadType {
 	 * @param readID3Length   Whether the binary data are stored in ID3 order.
 	 * @throws MagicPatternException Invalid parameters shall cause this.
 	 */
-	public MagicOffsetReadType(EndianType endianType, int valueByteLength, boolean readID3Length) throws MagicPatternException {
+	public MagicOffsetReadType(EndianType endianType, int valueByteLength, boolean readID3Length)
+			throws MagicPatternException {
 		if (endianType == null || valueByteLength < 0) {
 			throw new MagicPatternException("Invalid magic endian type initialization.");
 		}
@@ -94,54 +95,128 @@ public class MagicOffsetReadType {
 	 * @param rawDefinition The raw definition of this {@link MagicOffsetReadType} as a String.
 	 */
 	public static MagicOffsetReadType parse(String rawDefinition) throws MagicPatternException {
-		char endianType = '\0';
+		char readType = '\0';
 		if (rawDefinition != null && rawDefinition.length() == 1) {
-			endianType = rawDefinition.charAt(0);
+			readType = rawDefinition.charAt(0);
 		}
-		EndianType magicEndianType = EndianType.forName(endianType);
+		EndianType magicEndianType;
 		boolean readID3Length;
 		int valueByteLength;
 
-		switch (endianType) {
+		//noinspection DuplicateBranchesInSwitch
+		switch (readType) {
 			// byte
 			case 'b':
+				magicEndianType = EndianType.LITTLE;
+				readID3Length = false;
+				valueByteLength = 1;
+				break;
 			case 'B':
+				magicEndianType = EndianType.BIG;
+				readID3Length = false;
+				valueByteLength = 1;
+				break;
 			case 'c':
+				magicEndianType = EndianType.LITTLE;
+				readID3Length = false;
+				valueByteLength = 1;
+				break;
 			case 'C':
+				magicEndianType = EndianType.BIG;
 				readID3Length = false;
 				valueByteLength = 1;
 				break;
 			// short
 			case 's':
+				magicEndianType = EndianType.LITTLE;
+				readID3Length = false;
+				valueByteLength = 2;
+				break;
 			case 'S':
+				magicEndianType = EndianType.BIG;
+				readID3Length = false;
+				valueByteLength = 2;
+				break;
 			case 'h':
+				magicEndianType = EndianType.LITTLE;
+				readID3Length = false;
+				valueByteLength = 2;
+				break;
 			case 'H':
+				magicEndianType = EndianType.BIG;
 				readID3Length = false;
 				valueByteLength = 2;
 				break;
 			// id3 integer - 4 bytes
 			case 'i':
+				magicEndianType = EndianType.LITTLE;
+				readID3Length = true;
+				valueByteLength = 4;
+				break;
 			case 'I':
+				magicEndianType = EndianType.BIG;
 				readID3Length = true;
 				valueByteLength = 4;
 				break;
 			// quad/double - 8 bytes
 			case 'e':
+				magicEndianType = EndianType.LITTLE;
+				readID3Length = false;
+				valueByteLength = 8;
+				break;
 			case 'E':
+				magicEndianType = EndianType.BIG;
+				readID3Length = false;
+				valueByteLength = 8;
+				break;
 			case 'f':
+				magicEndianType = EndianType.LITTLE;
+				readID3Length = false;
+				valueByteLength = 8;
+				break;
 			case 'F':
+				magicEndianType = EndianType.BIG;
+				readID3Length = false;
+				valueByteLength = 8;
+				break;
 			case 'g':
+				magicEndianType = EndianType.LITTLE;
+				readID3Length = false;
+				valueByteLength = 8;
+				break;
 			case 'G':
+				magicEndianType = EndianType.BIG;
+				readID3Length = false;
+				valueByteLength = 8;
+				break;
 			case 'q':
+				magicEndianType = EndianType.LITTLE;
+				readID3Length = false;
+				valueByteLength = 8;
+				break;
 			case 'Q':
+				magicEndianType = EndianType.BIG;
 				readID3Length = false;
 				valueByteLength = 8;
 				break;
 			// integer - 4 bytes ("long" types when the spec was written)
 			case 'm':
-			case 'L':
+				magicEndianType = EndianType.MIDDLE;
+				readID3Length = false;
+				valueByteLength = 4;
+				break;
 			case 'l':
+				magicEndianType = EndianType.LITTLE;
+				readID3Length = false;
+				valueByteLength = 4;
+				break;
+			case 'L':
+				magicEndianType = EndianType.BIG;
+				readID3Length = false;
+				valueByteLength = 4;
+				break;
 			default:
+				magicEndianType = EndianType.NATIVE;
 				readID3Length = false;
 				valueByteLength = 4;
 				break;

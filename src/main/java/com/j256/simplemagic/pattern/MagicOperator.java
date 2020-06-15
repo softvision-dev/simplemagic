@@ -113,6 +113,8 @@ public enum MagicOperator {
 	 * @return A matching operator or null, if no match has been found.
 	 */
 	public static MagicOperator forPattern(String pattern, MagicOperator... knownOperators) {
-		return pattern == null ? null : pattern.trim().isEmpty() ? null : forOperator(pattern.trim().charAt(0), knownOperators);
+		return pattern == null ? null : pattern.trim().isEmpty() ? null : forOperator(
+				pattern.trim().charAt(0), knownOperators
+		);
 	}
 }

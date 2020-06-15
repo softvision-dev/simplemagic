@@ -5,9 +5,6 @@ import com.j256.simplemagic.pattern.MagicPattern;
 import com.j256.simplemagic.pattern.components.operation.OperationType;
 import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterion;
 import com.j256.simplemagic.pattern.components.operation.instruction.MagicInstruction;
-import com.j256.simplemagic.pattern.extractor.MagicExtractor;
-import com.j256.simplemagic.pattern.extractor.MagicExtractorFactory;
-import com.j256.simplemagic.pattern.extractor.types.DefaultExtractor;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,11 +37,11 @@ import java.util.regex.Pattern;
  * </i>
  * </p>
  * <p>
- * A type definition may be followed by flags and modifiers, those are strongly type specific and will be discussed
+ * A type definition may be followed by modifiers, those are strongly type specific and will be discussed
  * in the type specific implementations of {@link MagicCriterion}. For the purposes of this class, it is sufficient to
  * claim, that the type name must consist of alphabetical letters and numbers and might be followed by a character,
- * that is neither. This marker may be a flag marker like '/' or an operator like '&' - and an operand. Such
- * flags/modifiers shall be collected and shall be parsed type specific elsewhere.
+ * that is neither. This marker may be a modifier marker like '/' or an operator like '&' - and an operand. Such
+ * modifiers shall be collected and shall be parsed type specific elsewhere.
  * </p>
  * <p>
  * Attention: This library defines a type as the name of a {@link MagicOperation}.
@@ -64,8 +61,7 @@ public class MagicType {
 
 	private final OperationType operationType;
 	private final boolean unsigned;
-	private final String flagsAndModifiers;
-	private MagicExtractor<?> extractor;
+	private final String modifiers;
 
 	/**
 	 * Creates a new {@link MagicType} as found in a {@link MagicPattern}. The type shall influence the evaluation
@@ -77,16 +73,16 @@ public class MagicType {
 	 * @param operationType     The type of operation, that is defined by the pattern. A 'null' value will be treated as
 	 *                          invalid.
 	 * @param unsigned          A value of 'true' will define compared values as unsigned.
-	 * @param flagsAndModifiers Possibly appended flags and modifiers. A 'null' value will be treated as invalid.
+	 * @param modifiers Possibly appended modifiers. A 'null' value will be treated as invalid.
 	 * @throws MagicPatternException Invalid parameters shall cause this.
 	 */
-	public MagicType(OperationType operationType, boolean unsigned, String flagsAndModifiers) throws MagicPatternException {
-		if (operationType == null || flagsAndModifiers == null) {
+	public MagicType(OperationType operationType, boolean unsigned, String modifiers) throws MagicPatternException {
+		if (operationType == null || modifiers == null) {
 			throw new MagicPatternException("Invalid magic type initialization.");
 		}
 		this.operationType = operationType;
 		this.unsigned = unsigned;
-		this.flagsAndModifiers = flagsAndModifiers;
+		this.modifiers = modifiers;
 	}
 
 	/**
@@ -112,21 +108,8 @@ public class MagicType {
 	 *
 	 * @return Possibly appended flags and modifiers.
 	 */
-	public String getFlagsAndModifiers() {
-		return flagsAndModifiers;
-	}
-
-	/**
-	 * Returns the extractor, that must be used to extract values from data, that shall be checked for a match with the
-	 * current pattern. This will never return null, but may return the {@link DefaultExtractor} for types, a more
-	 * specific extractor has not been defined for. The {@link DefaultExtractor} will always "extract" an empty String.
-	 *
-	 * @return The extractor to use, to extract comparable values from data. (Must never return 'null')
-	 */
-	public MagicExtractor<?> getExtractor() {
-		return this.extractor == null ?
-				this.extractor = MagicExtractorFactory.createExtractor(getOperationType()) :
-				this.extractor;
+	public String getModifiers() {
+		return modifiers;
 	}
 
 	/**
@@ -135,7 +118,7 @@ public class MagicType {
 	 * @return The byte length of values of the type.
 	 */
 	public int getByteLength() {
-		return getExtractor().getByteLength();
+		return operationType.getByteLength();
 	}
 
 	/**

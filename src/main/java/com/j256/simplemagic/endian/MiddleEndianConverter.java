@@ -19,6 +19,33 @@ public class MiddleEndianConverter extends AbstractEndianConverter {
 	public Long convertNumber(byte[] data, int offset, int byteLength) {
 		return convertNumber(data, offset, byteLength, 8, 0xFF);
 	}
+	/**
+	 * Convert a number of bytes starting at an offset into a UTF8 1-byte {@link String}.
+	 *
+	 * @param data       The byte array from which shall be read.
+	 * @param offset     The offset in the byte array from which shall be read.
+	 * @param byteLength The number of bytes, that shall be read.
+	 * @return The {@link String} or null if not enough bytes.
+	 */
+	@Override
+	public String convertUTF8String(byte[] data, int offset, int byteLength) {
+		// Not implemented yet.
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Convert a number of bytes starting at an offset into a UTF16 2-byte {@link String}.
+	 *
+	 * @param data       The byte array from which shall be read.
+	 * @param offset     The offset in the byte array from which shall be read.
+	 * @param byteLength The number of bytes, that shall be read.
+	 * @return The {@link String} or null if not enough bytes.
+	 */
+	@Override
+	public String convertUTF16String(byte[] data, int offset, int byteLength) {
+		// Not implemented yet.
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * Convert a number of bytes starting at an offset into a {@link Long} where the high-bit in each byte is always 0.
@@ -76,5 +103,22 @@ public class MiddleEndianConverter extends AbstractEndianConverter {
 		value = (value << shift) | (data[offset + 3] & mask);
 		value = (value << shift) | (data[offset + 2] & mask);
 		return value;
+	}
+
+	/**
+	 * Convert a number of bytes starting at an offset into a {@link String}.
+	 *
+	 * @param data              The byte array from which shall be read.
+	 * @param offset            The offset in the byte array from which shall be read.
+	 * @param byteLength        The number of bytes, that shall be read.
+	 * @param characterByteSize The number of bytes constituting a character.
+	 * @param shift             An additional byte shift, that shall be applied.
+	 * @param mask              An additional byte mask, that shall be applied.
+	 * @return The {@link String} or null if not enough bytes.
+	 */
+	@Override
+	protected String convertString(byte[] data, int offset, int byteLength, int characterByteSize, int shift, int mask){
+		// Not implemented yet.
+		throw new UnsupportedOperationException();
 	}
 }

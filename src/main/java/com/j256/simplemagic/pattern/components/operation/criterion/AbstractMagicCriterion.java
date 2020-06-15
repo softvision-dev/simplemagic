@@ -75,8 +75,6 @@ import java.util.regex.Pattern;
 public abstract class AbstractMagicCriterion<VALUE_TYPE>
 		implements MagicCriterion<VALUE_TYPE> {
 
-	//TODO: reevaluate Criteria implementation especially for String and REGEX type - reimplement according to Manpage.
-
 	private static final Pattern NOOP_CRITERION = Pattern.compile("^[xX]$");
 
 	private MagicPattern magicPattern;
@@ -114,6 +112,20 @@ public abstract class AbstractMagicCriterion<VALUE_TYPE>
 	}
 
 	/**
+	 * Sets the {@link MagicOperator} defining the operation, that must be successful, for this criterion to be met.
+	 * This method does not accept and ignores 'null' operators.
+	 *
+	 * @param operator The {@link MagicOperator} defining the operation, that must be successful, for this criterion to
+	 *                 be met.
+	 */
+	public void setOperator(MagicOperator operator) {
+		if (operator == null) {
+			return;
+		}
+		this.operator = operator;
+	}
+
+	/**
 	 * Returns true, if this criterion does not represent a matchable operation and should be skipped during evaluation.
 	 *
 	 * @return True, this criterion does not represent a matchable operation.
@@ -121,19 +133,6 @@ public abstract class AbstractMagicCriterion<VALUE_TYPE>
 	@Override
 	public boolean isNoopCriterion() {
 		return noopCriterion;
-	}
-
-	/**
-	 * Sets the {@link MagicOperator} defining the operation, that must be successful, for this criterion to be met.
-	 *
-	 * @param operator The {@link MagicOperator} defining the operation, that must be successful, for this criterion to be met.
-	 * @throws MagicPatternException Shall be thrown, if an invalid default operator has been set.
-	 */
-	public void setOperator(MagicOperator operator) throws MagicPatternException {
-		if (operator == null) {
-			throw new MagicPatternException("Invalid criterion initialization.");
-		}
-		this.operator = operator;
 	}
 
 	/**
@@ -188,4 +187,12 @@ public abstract class AbstractMagicCriterion<VALUE_TYPE>
 	 * @throws MagicPatternException Shall be thrown, if the parsing failed.
 	 */
 	protected abstract void doParse(MagicPattern magicPattern, String rawDefinition) throws MagicPatternException;
+
+	/**
+	 * Parse the type appended modifiers of this {@link MagicCriterion}.
+	 *
+	 * @param modifiers The type appended modifiers.
+	 * @throws MagicPatternException Shall be thrown if an error occurred during evaluation.
+	 */
+	protected abstract void parseTypeAppendedModifiers(String modifiers) throws MagicPatternException;
 }

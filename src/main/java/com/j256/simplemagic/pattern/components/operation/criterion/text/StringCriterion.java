@@ -3,14 +3,10 @@ package com.j256.simplemagic.pattern.components.operation.criterion.text;
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.MagicPattern;
 import com.j256.simplemagic.pattern.MagicOperator;
-import com.j256.simplemagic.pattern.PatternUtils;
-import com.j256.simplemagic.pattern.components.operation.criterion.AbstractMagicCriterion;
+import com.j256.simplemagic.pattern.components.operation.criterion.ExtractedValue;
 import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterion;
 import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterionResult;
-
-import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.j256.simplemagic.pattern.components.operation.criterion.modifiers.TextCriterionModifiers;
 
 /**
  * <b>Represents a String criterion from a line in magic (5) format.</b>
@@ -41,19 +37,22 @@ import java.util.regex.Pattern;
  * the string to be trimmed, i.e. leading and trailing whitespace is deleted before the string is printed.
  * </i>
  * </p>
+ * <p>
+ * <i>
+ * For string values, the string from the file must match the specified string. The operators =, < and > (but not &) can
+ * be applied to strings. The length used for matching is that of the string argument in the magic file. This means that
+ * a line can match any non-empty string (usually used to then print the string), with >\0 (because all non-empty
+ * strings are greater than the empty string).
+ * </i>
+ * </p>
  */
-public class StringCriterion extends AbstractMagicCriterion<String> {
+public class StringCriterion extends AbstractTextCriterion {
 
-	public static final MagicOperator[] STRING_OPERATORS = new MagicOperator[]{
-			MagicOperator.EQUALS, MagicOperator.NOT_EQUALS, MagicOperator.GREATER_THAN, MagicOperator.LESS_THAN
-	};
-	private static final Pattern FLAG_PATTERN = Pattern.compile("(/\\d+)?(/[BbcwWt]*)?");
-
-	private String testValue = "";
-	private int maxSearchOffset = 0;
 	private boolean compactWhiteSpace = false;
 	private boolean optionalWhiteSpace = false;
-	private boolean caseInsensitive = false;
+	private boolean lowerCaseInsensitivity = false;
+	private boolean upperCaseInsensitivity = false;
+	private boolean printTrimmed = false;
 
 	/**
 	 * Creates a new {@link StringCriterion} as found in a {@link MagicPattern}. The criterion shall define one String
@@ -70,49 +69,167 @@ public class StringCriterion extends AbstractMagicCriterion<String> {
 	}
 
 	/**
-	 * Returns the maximum offset for String extraction.
+	 * Returns true, if whitespaces shall be compacted in the compared String.
+	 * <p>
+	 * <i>
+	 * The “W” flag compacts whitespace in the target, which must contain at least one whitespace character. If the
+	 * magic has n consecutive blanks, the target needs at least n consecutive blanks to match.
+	 * </i>
+	 * </p>
 	 *
-	 * @return The maximum offset for String extraction.
+	 * @return True, if whitespaces shall be compacted in the compared String.
 	 */
-	public int getMaxSearchOffset() {
-		return maxSearchOffset;
-	}
-
-	/**
-	 * Whether whitespaces shall be compacted, when searching data for a match.
-	 *
-	 * @return True, if whitespaces shall be compacted, when searching data for a match.
-	 */
-	public boolean isCompactWhiteSpace() {
+	public boolean isCompactWhiteSpaces() {
 		return compactWhiteSpace;
 	}
 
 	/**
-	 * Whether whitespaces are treated as optional, when searching data for a match.
+	 * Returns true, if whitespaces are optional in the compared String.
+	 * <p>
+	 * <i>
+	 * The “w” flag treats every blank in the magic as
+	 * an optional blank.
+	 * </i>
+	 * </p>
 	 *
-	 * @return True, if whitespaces shall be treated as optional, when searching data for a match.
+	 * @return True, if whitespaces are optional in the compared String.
 	 */
 	public boolean isOptionalWhiteSpace() {
 		return optionalWhiteSpace;
 	}
 
 	/**
-	 * Whether the search for a match is case sensitive.
+	 * Returns true, if lower case characters in the search String shall be case insensitive.
+	 * <p>
+	 * <i>
+	 * The “c” flag specifies case insensitive matching: lower case characters in the magic match both
+	 * lower and upper case characters in the target, whereas upper case characters in the magic only match upper case
+	 * characters in the target.
+	 * </i>
+	 * </p>
 	 *
-	 * @return True, if the search for a match is case sensitive.
+	 * @return True, if lower case characters in the search String shall be case insensitive.
 	 */
-	public boolean isCaseInsensitive() {
-		return caseInsensitive;
+	public boolean isLowerCaseInsensitivity() {
+		return lowerCaseInsensitivity;
 	}
 
 	/**
-	 * Returns a String value, that must be found in binary data to match this criterion.
+	 * Returns true, if upper case characters in the search String shall be case insensitive.
+	 * <p>
+	 * <i>
+	 * The “C” flag specifies case insensitive matching: upper case characters in the magic match both lower and upper
+	 * case characters in the target, whereas lower case characters in the magic only match upper case characters in
+	 * the target.
+	 * </i>
+	 * </p>
 	 *
-	 * @return The String value, that must be matched.
+	 * @return True, if upper case characters in the search String shall be case insensitive.
+	 */
+	public boolean isUpperCaseInsensitivity() {
+		return upperCaseInsensitivity;
+	}
+
+	/**
+	 * Returns true, if the matching String shall be trimmed before returning it as a matching value.
+	 * <p>
+	 * <i>
+	 * The “T” flag causes the string to be trimmed, i.e. leading and trailing whitespace is deleted before the string
+	 * is printed.
+	 * </i>
+	 * </p>
+	 *
+	 * @return True, if upper case characters in the search String shall be case insensitive.
+	 */
+	public boolean isPrintTrimmed() {
+		return printTrimmed;
+	}
+
+	/**
+	 * Returns the value, that is actually found in the data at the expected position. Length is depending on expected
+	 * value for String criteria - length is therefore always ignored. May not return null directly,
+	 * wrap 'null' value using {@link ExtractedValue} instead.
+	 *
+	 * @param data              The binary data, that shall be checked whether they match this criterion.
+	 * @param currentReadOffset The initial offset in the given data.
+	 * @param length            Does not influence the actual value for String criteria - simply set this to -1.
+	 * @param invertEndianness  Whether the currently determined endianness shall be inverted.
+	 * @return The {@link ExtractedValue}, that shall match the criterion.
 	 */
 	@Override
-	public String getTestValue() {
-		return testValue;
+	public ExtractedValue<String> getActualValue(byte[] data, int currentReadOffset, int length, boolean invertEndianness) {
+		String expectedString = getExpectedValue();
+		int expectationLength = expectedString.length();
+		int actualCharacterOffset = currentReadOffset;
+		int expectedCharacterOffset = 0;
+		StringBuilder actualValueBuilder = new StringBuilder();
+
+		for (; expectedCharacterOffset < expectationLength; expectedCharacterOffset++) {
+			// Collect the next expected character.
+			char expectedCharacter = expectedString.charAt(expectedCharacterOffset);
+			boolean expectedIsWhitespace = Character.isWhitespace(expectedCharacter);
+
+			// If we reached the end of our data, without matching our expectations, the match failed.
+			if (actualCharacterOffset >= data.length) {
+				// Except: all characters left to expect were optional whitespaces.
+				if (isOptionalWhiteSpace()) {
+					for (; expectedCharacterOffset < expectationLength; expectedCharacterOffset++) {
+						if (!Character.isWhitespace(expectedString.charAt(expectedCharacterOffset))) {
+							return new ExtractedValue<String>(null, currentReadOffset);
+						}
+						actualValueBuilder.append(' ');
+					}
+					break;
+				} else {
+					return new ExtractedValue<String>(null, currentReadOffset);
+				}
+			}
+
+			// Collect the compared actual character.
+			char actualCharacter = (char) (data[actualCharacterOffset] & 0xFF);
+			boolean actualIsWhitespace = Character.isWhitespace(actualCharacter);
+
+			// Skip optional whitespaces.
+			if (isOptionalWhiteSpace() && expectedIsWhitespace && !actualIsWhitespace) {
+				actualValueBuilder.append(' ');
+				continue;
+			}
+
+			// Compact whitespaces?
+			if (isCompactWhiteSpaces() && expectedIsWhitespace) {
+				// Collect number of expected whitespaces.
+				int expectedWhitespaces = 0;
+				while (expectedIsWhitespace && expectedCharacterOffset < expectationLength) {
+					if (expectedIsWhitespace = Character.isWhitespace(expectedString.charAt(expectedCharacterOffset))) {
+						actualValueBuilder.append(' ');
+						expectedWhitespaces++;
+					}
+					expectedCharacterOffset++;
+				}
+
+				// Collect number of actual whitespaces.
+				int actualWhitespaces = 0;
+				//noinspection ConstantConditions
+				while (actualIsWhitespace && actualCharacterOffset < data.length) {
+					actualCharacterOffset++;
+					if (actualIsWhitespace = Character.isWhitespace((char) (data[actualCharacterOffset] & 0xFF))) {
+						actualWhitespaces++;
+					}
+				}
+
+				// If not enough actual whitespaces are found, the match failed.
+				if (actualWhitespaces < expectedWhitespaces) {
+					return new ExtractedValue<String>(null, currentReadOffset);
+				}
+
+				continue;
+			}
+			// Else prepare to read next character and collect the character.
+			actualCharacterOffset++;
+			actualValueBuilder.append(actualCharacter);
+		}
+
+		return new ExtractedValue<String>(actualValueBuilder.toString(), actualCharacterOffset);
 	}
 
 	/**
@@ -123,216 +240,91 @@ public class StringCriterion extends AbstractMagicCriterion<String> {
 	 * @param currentReadOffset The initial offset in the given data.
 	 * @param invertEndianness  True, if the endianness of extracted data shall be inverted for this test.
 	 * @return A {@link MagicCriterionResult} summarizing the evaluation results.
-	 * @throws MagicPatternException Shall be thrown, if the evaluation failed (possibly due to a malformed criterion.)
 	 */
 	@Override
-	public MagicCriterionResult<String> isMatch(byte[] data, int currentReadOffset, boolean invertEndianness)
-			throws MagicPatternException {
-		return findOffsetMatch(data, null, currentReadOffset, data.length);
-	}
-
-	/**
-	 * Searches for a match in either the given byte or char arrays (selecting the array, that is not 'null').
-	 * Automatically fails, when both the data and the char array are set to 'null'.
-	 *
-	 * @param data              The byte array, that shall be searched for a match. (When set to 'null' chars shall be
-	 *                          searched instead.)
-	 * @param chars             The char array, that shall be searched for a match. (When set to 'null' data shall be
-	 *                          searched instead. If data is not 'null' the chars array will be ignored.)
-	 * @param currentReadOffset The search offset.
-	 * @param terminalOffset    The terminal search offset.
-	 * @return A {@link MagicCriterionResult} summarizing the evaluation results.
-	 */
-	protected MagicCriterionResult<String> findOffsetMatch(
-			byte[] data, final char[] chars, int currentReadOffset, int terminalOffset
-	) {
+	public MagicCriterionResult<String> isMatch(byte[] data, int currentReadOffset, boolean invertEndianness) {
 		// verify the starting offset
-		if (currentReadOffset < 0 || (data == null && chars == null)) {
-			return new MagicCriterionResult<String>(this, currentReadOffset);
+		if (currentReadOffset < 0 || (data == null)) {
+			return new MagicCriterionResult<String>(false, this, currentReadOffset);
 		}
 
-		int targetPos = currentReadOffset;
-		boolean lastMagicCompactWhitespace = false;
-		for (int magicPos = 0; magicPos < getTestValue().length(); magicPos++) {
-			char magicCh = getTestValue().charAt(magicPos);
-			boolean lastChar = (magicPos == getTestValue().length() - 1);
-			// did we reach the end?
-			if (targetPos >= terminalOffset) {
-				return new MagicCriterionResult<String>(this, currentReadOffset);
-			}
-			char targetCh;
-			if (data == null) {
-				targetCh = chars[targetPos];
-			} else if (chars == null) {
-				targetCh = (char) (data[targetPos] & 0xFF);
-			} else {
-				return new MagicCriterionResult<String>(this, currentReadOffset);
-			}
-			targetPos++;
-
-			// if it matches, we can continue
-			if (matchCharacter(targetCh, magicCh, lastChar)) {
-				if (isCompactWhiteSpace()) {
-					lastMagicCompactWhitespace = Character.isWhitespace(magicCh);
-				}
-				continue;
-			}
-
-			// if it doesn't match, maybe the target is a whitespace
-			if ((lastMagicCompactWhitespace || isOptionalWhiteSpace()) && Character.isWhitespace(targetCh)) {
-				do {
-					if (targetPos >= terminalOffset) {
-						break;
-					}
-					if (data == null) {
-						targetCh = chars[targetPos];
-					} else {
-						targetCh = (char) (data[targetPos] & 0xFF);
-					}
-					targetPos++;
-				} while (Character.isWhitespace(targetCh));
-				// now that we get to the first non-whitespace, it must match
-				if (matchCharacter(targetCh, magicCh, lastChar)) {
-					if (isCompactWhiteSpace()) {
-						lastMagicCompactWhitespace = Character.isWhitespace(magicCh);
-					}
-					continue;
-				}
-				// if it doesn't match, check the case insensitive
-			}
-
-			// maybe it doesn't match because of case insensitive handling and magic-char is lowercase
-			if (isCaseInsensitive() && Character.isLowerCase(magicCh)) {
-				if (matchCharacter(Character.toLowerCase(targetCh), magicCh, lastChar)) {
-					// matches
-					continue;
-				}
-				// upper-case characters must match
-			}
-
-			return new MagicCriterionResult<String>(this, currentReadOffset);
+		// Collect actual and expected value.
+		ExtractedValue<String> actualValue = getActualValue(data, currentReadOffset, -1, invertEndianness);
+		String expectedValue = getExpectedValue();
+		if (actualValue.getValue() == null || expectedValue == null ||
+				actualValue.getValue().length() != expectedValue.length()) {
+			return new MagicCriterionResult<String>(false, this, currentReadOffset);
 		}
 
-		char[] resultChars;
-		if (data == null) {
-			resultChars = Arrays.copyOfRange(chars, currentReadOffset, targetPos);
-		} else {
-			resultChars = new char[targetPos - currentReadOffset];
-			for (int i = 0; i < resultChars.length; i++) {
-				resultChars[i] = (char) (data[currentReadOffset + i] & 0xFF);
+		// Compare expected and actual value.
+		for (int index = 0; index < expectedValue.length(); index++) {
+			// Collect next actual and expected character.
+			char actualCharacter = actualValue.getValue().charAt(index);
+			char expectedCharacter = expectedValue.charAt(index);
+			boolean lastCharacter = (index == expectedValue.length() - 1);
+
+			// If it does not match return with failure.
+			if (!isCharacterMatching(actualCharacter, getOperator(), expectedCharacter,
+					lastCharacter, isLowerCaseInsensitivity(), isUpperCaseInsensitivity())) {
+				return new MagicCriterionResult<String>(false, this, currentReadOffset);
 			}
 		}
 
-		String extractedValue = new String(resultChars);
-		return new MagicCriterionResult<String>(this, targetPos, extractedValue);
+		// When reaching this, everything matches. Collect The matching characters and return the result.
+		return new MagicCriterionResult<String>(true, this, actualValue.getSuggestedNextReadOffset(),
+				isPrintTrimmed() ? actualValue.getValue().trim() : actualValue.getValue());
 	}
 
 	/**
-	 * Evaluates a specific {@link MagicOperator} for a selected extracted character and the test character, that shall
-	 * be matched.
+	 * Parse the type appended modifiers of this {@link MagicCriterion}.
 	 *
-	 * @param extractedChar The extracted character, that shall match.
-	 * @param testChar      The test character, that shall be matched.
-	 * @param lastChar      True, if the character is the last character to be compared.
-	 * @return True, if the extracted character matches.
-	 */
-	protected boolean matchCharacter(char extractedChar, char testChar, boolean lastChar) {
-		switch (getOperator()) {
-			case NOT_EQUALS:
-				return extractedChar != testChar;
-			case GREATER_THAN:
-				if (lastChar) {
-					return extractedChar > testChar;
-				} else {
-					return extractedChar >= testChar;
-				}
-			case LESS_THAN:
-				if (lastChar) {
-					return extractedChar < testChar;
-				} else {
-					return extractedChar <= testChar;
-				}
-			case EQUALS:
-			default:
-				return extractedChar == testChar;
-		}
-	}
-
-	/**
-	 * Parse the given raw definition to initialize this {@link MagicCriterion} instance.
-	 *
-	 * @param magicPattern  The pattern, this criterion is defined for. (For reflective access.) A 'null' value will
-	 *                      be treated as invalid.
-	 * @param rawDefinition The raw definition of the {@link MagicCriterion} as a String.
-	 * @throws MagicPatternException Shall be thrown, if the parsing failed.
+	 * @param modifiers The type appended modifiers.
 	 */
 	@Override
-	public void doParse(MagicPattern magicPattern, String rawDefinition) throws MagicPatternException {
-		if (rawDefinition == null || rawDefinition.length() == 0) {
-			throw new MagicPatternException("Criterion definition is empty.");
-		}
-
-		// Try to find additional flags and patterns for the String type.
-		Matcher matcher = FLAG_PATTERN.matcher(getMagicPattern().getType().getFlagsAndModifiers());
-
-		// If no additional flags and patterns are contained, the rawDefinition value is the complete test String.
-		this.testValue = rawDefinition;
-		if (!matcher.matches()) {
+	protected void parseTypeAppendedModifiers(String modifiers) {
+		TextCriterionModifiers textFlagsAndModifiers = new TextCriterionModifiers(modifiers);
+		if (textFlagsAndModifiers.isEmpty()) {
 			return;
 		}
 
-		// parse maxSearchOffset.
-		String lengthStr = matcher.group(1);
-		if (lengthStr != null && lengthStr.length() > 1) {
-			try {
-				// skip the '/'.
-				this.maxSearchOffset = Integer.decode(lengthStr.substring(1));
-			} catch (NumberFormatException e) {
-				// may not be able to get here.
-				throw new MagicPatternException(
-						String.format("Invalid format for search length: '%s'", lengthStr.substring(1))
-				);
+		// The string type specification can be optionally followed by /[WwcCtbT]*.
+		for (char ch : textFlagsAndModifiers.getCharacterModifiers()) {
+			switch (ch) {
+				// The “W” flag compacts whitespace in the target, which must contain at least one whitespace
+				// character. If the magic has n consecutive blanks, the target needs at least n consecutive
+				// blanks to match.
+				case 'W':
+					this.compactWhiteSpace = true;
+					break;
+				// The “w” flag treats every blank in the magic as an optional blank.
+				case 'w':
+					this.optionalWhiteSpace = true;
+					break;
+				// The “c” flag specifies case insensitive matching: lower case characters in the magic match
+				// both lower and upper case characters in the target, whereas upper case characters in the
+				// magic only match upper case characters in the target.
+				case 'c':
+					this.lowerCaseInsensitivity = true;
+					break;
+				// The “C” flag specifies case insensitive matching: upper case characters in the magic match
+				// both lower and upper case characters in the target, whereas lower case characters in the
+				// magic only match upper case characters in the target.
+				case 'C':
+					this.upperCaseInsensitivity = true;
+					break;
+				// The “T” flag causes the string to be trimmed, i.e. leading and trailing whitespace is deleted
+				// before the string is printed.
+				case 'T':
+					this.printTrimmed = true;
+					break;
+				// The “t” flag forces the test to be done for text files, while the “b” flag forces the test to
+				// be done for binary files.
+				case 't':
+				case 'b':
+					// differentiation of text and binary files is currently ignored.
+					break;
 			}
 		}
-
-		// parse flags.
-		String flagsStr = matcher.group(2);
-		if (flagsStr != null) {
-			// look at flags/modifiers.
-			for (char ch : flagsStr.toCharArray()) {
-				switch (ch) {
-					case 'B':
-						this.compactWhiteSpace = true;
-						break;
-					case 'b':
-						this.optionalWhiteSpace = true;
-						break;
-					case 'c':
-						this.caseInsensitive = true;
-						break;
-					case 't':
-					case 'w':
-					case 'W':
-						// XXX: no idea what these do.
-						break;
-					default:
-						break;
-				}
-			}
-		}
-
-		// Parse operator.
-		if (this.testValue == null || this.testValue.length() == 0) {
-			return;
-		}
-		MagicOperator operator = MagicOperator.forOperator(this.testValue.charAt(0), STRING_OPERATORS);
-		if (operator != null) {
-			setOperator(operator);
-			this.testValue = this.testValue.substring(1);
-		}
-
-		// Preprocess the String value.
-		this.testValue = PatternUtils.escapePattern(this.testValue);
 	}
 
 	/**
@@ -343,7 +335,7 @@ public class StringCriterion extends AbstractMagicCriterion<String> {
 	 */
 	@Override
 	public byte[] getStartingBytes() {
-		String pattern = getTestValue();
+		String pattern = getExpectedValue();
 		if (pattern == null || pattern.length() < 4) {
 			return null;
 		} else {

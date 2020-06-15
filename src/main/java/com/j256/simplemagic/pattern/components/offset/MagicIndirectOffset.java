@@ -54,9 +54,11 @@ import java.util.regex.Pattern;
  */
 public class MagicIndirectOffset {
 
-	//TODO: signum of offsets (. and ,) must be implemented
-	//TODO: Indirect offsets can have Quad length (8 bytes) for file(1) magic patterns. Integer based byte arrays may not be viable anymore.
-	//TODO: Negative Offsets can be relative to the eof - a size limitation for the processed data may not be viable anymore.
+	// TODO: signum of offsets (. and ,) must be implemented
+	// TODO: Indirect offsets can have Quad length (8 bytes) for file(1) magic patterns. Integer based byte arrays may
+	// not be viable anymore.
+	// TODO: Negative Offsets can be relative to the eof - a size limitation for the processed data may not be viable
+	// anymore.
 
 	private static final Pattern INDIRECT_OFFSET_PATTERN = Pattern.compile(
 			// Find inner relativization marker: optional

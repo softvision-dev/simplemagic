@@ -4,6 +4,7 @@ import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.MagicPattern;
 import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterion;
 import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterionResult;
+import com.j256.simplemagic.pattern.components.operation.criterion.modifiers.TextCriterionModifiers;
 
 /**
  * <b>Represents a Search criterion from a line in magic (5) format.</b>
@@ -31,6 +32,8 @@ import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterio
  */
 public class SearchCriterion extends StringCriterion {
 
+	private int range = 0;
+
 	/**
 	 * Creates a new {@link SearchCriterion} as found in a {@link MagicPattern}. The criterion shall define one Search
 	 * evaluation contained by a pattern.
@@ -45,6 +48,15 @@ public class SearchCriterion extends StringCriterion {
 	}
 
 	/**
+	 * Returns the range of this search criterion.
+	 *
+	 * @return The range of this search criterion.
+	 */
+	public int getRange() {
+		return range;
+	}
+
+	/**
 	 * Shall evaluate the {@link MagicCriterion} for the given data and offset and shall return a {@link MagicCriterionResult}
 	 * summarizing the evaluation results.
 	 *
@@ -54,22 +66,45 @@ public class SearchCriterion extends StringCriterion {
 	 */
 	@Override
 	public MagicCriterionResult<String> isMatch(byte[] data, int currentReadOffset, boolean invertEndianness) {
-		int maxSearchOffset = getMaxSearchOffset();
-		if (isOptionalWhiteSpace()) {
-			// we have to look at all of the bytes unfortunately
-			maxSearchOffset = data.length;
+		int range = getRange();
+
+		// verify the starting offset and range
+		if (currentReadOffset < 0 || data == null || range <= 0) {
+			return new MagicCriterionResult<String>(false, this, currentReadOffset);
 		}
-		// if offset is 1 then we need to pre-read 1 char
-		int end = currentReadOffset + maxSearchOffset + getTestValue().length();
-		if (end > data.length) {
-			end = data.length;
-		}
-		for (int offset = currentReadOffset; offset < end; offset++) {
-			MagicCriterionResult<String> match = findOffsetMatch(data, null, offset, data.length);
-			if (match.isMatch()) {
-				return match;
+
+		for (int i = 0; i <= range; i++) {
+			MagicCriterionResult<String> result = super.isMatch(
+					data, currentReadOffset + i, invertEndianness
+			);
+			if (result.isMatch()) {
+				return result;
 			}
 		}
-		return new MagicCriterionResult<String>(this, currentReadOffset);
+
+		return new MagicCriterionResult<String>(false, this, currentReadOffset);
+	}
+
+	/**
+	 * Parse the type appended modifiers of this {@link MagicCriterion}.
+	 *
+	 * @param modifiers The type appended modifiers.
+	 */
+	@Override
+	protected void parseTypeAppendedModifiers(String modifiers) {
+		TextCriterionModifiers textFlagsAndModifiers = new TextCriterionModifiers(modifiers);
+		if (textFlagsAndModifiers.isEmpty()) {
+			return;
+		}
+
+		// The search expression must contain the range in the form /number, that is the number of positions at which
+		// the match will be attempted, starting from the start offset.
+		this.range = textFlagsAndModifiers.getNumericModifiers().isEmpty() ?
+				0 : textFlagsAndModifiers.getNumericModifiers().get(0);
+
+		// The same modifier flags can be used as for string patterns.
+		if (!textFlagsAndModifiers.getCharacterModifiers().isEmpty()) {
+			super.parseTypeAppendedModifiers(modifiers);
+		}
 	}
 }

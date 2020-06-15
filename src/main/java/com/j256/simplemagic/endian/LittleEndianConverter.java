@@ -1,5 +1,8 @@
 package com.j256.simplemagic.endian;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+
 /**
  * Converts values in "little" endian-ness where the high-order bytes come _after_ the low-order (DCBA). x86 processors.
  *
@@ -18,6 +21,32 @@ public class LittleEndianConverter extends AbstractEndianConverter {
 	@Override
 	public Long convertNumber(byte[] data, int offset, int byteLength) {
 		return convertNumber(data, offset, byteLength, 8, 0xFF);
+	}
+
+	/**
+	 * Convert a number of bytes starting at an offset into a UTF8 1-byte {@link String}.
+	 *
+	 * @param data       The byte array from which shall be read.
+	 * @param offset     The offset in the byte array from which shall be read.
+	 * @param byteLength The number of bytes, that shall be read.
+	 * @return The {@link String} or null if not enough bytes.
+	 */
+	@Override
+	public String convertUTF8String(byte[] data, int offset, int byteLength) {
+		return convertString(data, offset, byteLength, 1, 8, 0xFF);
+	}
+
+	/**
+	 * Convert a number of bytes starting at an offset into a UTF16 2-byte {@link String}.
+	 *
+	 * @param data       The byte array from which shall be read.
+	 * @param offset     The offset in the byte array from which shall be read.
+	 * @param byteLength The number of bytes, that shall be read.
+	 * @return The {@link String} or null if not enough bytes.
+	 */
+	@Override
+	public String convertUTF16String(byte[] data, int offset, int byteLength) {
+		return convertString(data, offset, byteLength, 2, 8, 0xFF);
 	}
 
 	/**
@@ -70,5 +99,41 @@ public class LittleEndianConverter extends AbstractEndianConverter {
 			value = value << shift | (data[i] & mask);
 		}
 		return value;
+	}
+
+	/**
+	 * Convert a number of bytes starting at an offset into a {@link String}.
+	 *
+	 * @param data              The byte array from which shall be read.
+	 * @param offset            The offset in the byte array from which shall be read.
+	 * @param byteLength        The number of bytes, that shall be read.
+	 * @param characterByteSize The number of bytes constituting a character.
+	 * @param shift             An additional byte shift, that shall be applied.
+	 * @param mask              An additional byte mask, that shall be applied.
+	 * @return The {@link String} or null if not enough bytes.
+	 */
+	@SuppressWarnings("DuplicatedCode")
+	@Override
+	protected String convertString(byte[] data, int offset, int byteLength, int characterByteSize, int shift, int mask) {
+		if (offset < 0 || offset + byteLength > data.length) {
+			return null;
+		}
+		BigInteger value = BigInteger.valueOf(0L);
+		for (int i = offset + (byteLength - 1); i >= offset; i--) {
+			value = value.shiftLeft(shift).or(BigInteger.valueOf(data[i] & mask));
+		}
+
+		try {
+			switch (characterByteSize) {
+				case 1:
+					return new String(value.toByteArray(), "UTF-8");
+				case 2:
+					return new String(value.toByteArray(), "UTF-16");
+				default:
+					throw new UnsupportedOperationException();
+			}
+		} catch (UnsupportedEncodingException ex) {
+			throw new UnsupportedOperationException();
+		}
 	}
 }

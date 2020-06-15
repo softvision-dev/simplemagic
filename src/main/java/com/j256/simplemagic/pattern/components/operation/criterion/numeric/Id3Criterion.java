@@ -1,10 +1,12 @@
 package com.j256.simplemagic.pattern.components.operation.criterion.numeric;
 
+import com.j256.simplemagic.endian.EndianConverterFactory;
 import com.j256.simplemagic.endian.EndianType;
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.MagicPattern;
 import com.j256.simplemagic.pattern.MagicOperator;
 import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterion;
+import com.j256.simplemagic.pattern.components.operation.criterion.ExtractedValue;
 
 /**
  * <b>Represents an Id3 Integer criterion from a line in magic (5) format.</b>
@@ -27,7 +29,7 @@ import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterio
  * </i>
  * </p>
  */
-public class Id3Criterion extends AbstractNumberCriterion {
+public class Id3Criterion extends AbstractNumericCriterion {
 
 	/**
 	 * Creates a new {@link Id3Criterion} as found in a {@link MagicPattern}. The criterion shall define one
@@ -45,213 +47,123 @@ public class Id3Criterion extends AbstractNumberCriterion {
 	}
 
 	/**
-	 * Evaluates a {@link MagicOperator#CONJUNCTION} modifier for this criterion.
+	 * Returns the value, that is actually found in the data at the expected position. May not return null directly,
+	 * wrap 'null' value using {@link ExtractedValue} instead.
 	 *
-	 * @param extractedValue The extracted value that shall be modified.
-	 * @param operand        The operand, that shall be applied.
-	 * @return The resulting value.
+	 * @param data              The binary data, that shall be checked whether they match this criterion.
+	 * @param currentReadOffset The initial offset in the given data.
+	 * @param length            The value length in bytes. (-1 if no length shall be given.)
+	 * @param invertEndianness  Whether the currently determined endianness shall be inverted.
+	 * @return The {@link ExtractedValue}, that shall match the criterion.
 	 */
+	@SuppressWarnings("DuplicatedCode")
 	@Override
-	protected Number applyConjunction(Number extractedValue, Number operand) {
-		return extractedValue.intValue() & operand.intValue();
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#DISJUNCTION} modifier for this criterion.
-	 *
-	 * @param extractedValue The extracted value that shall be modified.
-	 * @param operand        The operand, that shall be applied.
-	 * @return The resulting value.
-	 */
-	@Override
-	protected Number applyDisjunction(Number extractedValue, Number operand) {
-		return extractedValue.intValue() | operand.intValue();
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#CONTRAVALENCE} modifier for this criterion.
-	 *
-	 * @param extractedValue The extracted value that shall be modified.
-	 * @param operand        The operand, that shall be applied.
-	 * @return The resulting value.
-	 */
-	@Override
-	protected Number applyContravalence(Number extractedValue, Number operand) {
-		return extractedValue.intValue() ^ operand.intValue();
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#COMPLEMENT} modifier for this criterion.
-	 *
-	 * @param extractedValue The extracted value that shall be modified.
-	 * @return The resulting value.
-	 */
-	@Override
-	protected Number applyComplement(Number extractedValue) {
-		return ~extractedValue.intValue();
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#ADD} modifier for this criterion.
-	 *
-	 * @param extractedValue The extracted value that shall be modified.
-	 * @param operand        The operand, that shall be applied.
-	 * @return The resulting value.
-	 */
-	@Override
-	protected Number applyAddition(Number extractedValue, Number operand) {
-		return extractedValue.intValue() + operand.intValue();
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#SUBTRACT} modifier for this criterion.
-	 *
-	 * @param extractedValue The extracted value that shall be modified.
-	 * @param operand        The operand, that shall be applied.
-	 * @return The resulting value.
-	 */
-	@Override
-	protected Number applySubtraction(Number extractedValue, Number operand) {
-		return extractedValue.intValue() - operand.intValue();
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#MULTIPLY} modifier for this criterion.
-	 *
-	 * @param extractedValue The extracted value that shall be modified.
-	 * @param operand        The operand, that shall be applied.
-	 * @return The resulting value.
-	 */
-	@Override
-	protected Number applyMultiplication(Number extractedValue, Number operand) {
-		return extractedValue.intValue() * operand.intValue();
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#DIVIDE} modifier for this criterion.
-	 *
-	 * @param extractedValue The extracted value that shall be modified.
-	 * @param operand        The operand, that shall be applied.
-	 * @return The resulting value.
-	 */
-	@Override
-	protected Number applyDivision(Number extractedValue, Number operand) {
-		return extractedValue.intValue() / operand.intValue();
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#MODULO} modifier for this criterion.
-	 *
-	 * @param extractedValue The extracted value that shall be modified.
-	 * @param operand        The operand, that shall be applied.
-	 * @return The resulting value.
-	 */
-	@Override
-	protected Number applyModulo(Number extractedValue, Number operand) {
-		return extractedValue.intValue() % operand.intValue();
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#EQUALS} for this criterion.
-	 *
-	 * @param extractedValue The value, that shall be equal to the expected test value.
-	 * @return True, if the given value is equal to the expected test value.
-	 * @throws MagicPatternException Shall be thrown, if the evaluation failed with an exception.
-	 */
-	@Override
-	protected boolean testEqual(Number extractedValue) throws MagicPatternException {
-		if (getMagicPattern().getType().isUnsigned()) {
-			return getTestValue() != null && extractedValue != null &&
-					extractedValue.longValue() == getTestValue().longValue();
+	public ExtractedValue<Number> getActualValue(byte[] data, int currentReadOffset, int length, boolean invertEndianness) {
+		if (length < 0 || (currentReadOffset + length) > data.length) {
+			return new ExtractedValue<Number>(null, currentReadOffset);
 		}
-		return getTestValue() != null && extractedValue != null &&
-				extractedValue.intValue() == getTestValue().intValue();
-	}
 
-	/**
-	 * Evaluates a {@link MagicOperator#NOT_EQUALS} for this criterion.
-	 *
-	 * @param extractedValue The value, that shall not be equal to the expected test value.
-	 * @return True, if the given value is not equal to the expected test value.
-	 * @throws MagicPatternException Shall be thrown, if the evaluation failed with an exception.
-	 */
-	@Override
-	protected boolean testNotEqual(Number extractedValue) throws MagicPatternException {
-		if (getMagicPattern().getType().isUnsigned()) {
-			return getTestValue() != null && extractedValue != null &&
-					extractedValue.longValue() != getTestValue().longValue();
+		// because we only use the lower 7-bits of each byte, we need to copy into a local byte array
+		byte[] sevenBitBytes = new byte[length];
+		for (int i = 0; i < length; i++) {
+			sevenBitBytes[i] = (byte) (data[currentReadOffset + i] & 0x7F);
 		}
-		return getTestValue() != null && extractedValue != null &&
-				extractedValue.intValue() != getTestValue().intValue();
+		// because we've copied into a local array, we use the 0 offset
+		return new ExtractedValue<Number>(EndianConverterFactory.createEndianConverter(
+				invertEndianness ? getEndianness().getInvertedEndianType() : getEndianness()
+		).convertNumber(sevenBitBytes, 0, length), currentReadOffset + length);
 	}
 
 	/**
-	 * Evaluates a {@link MagicOperator#GREATER_THAN} for this criterion.
+	 * Applies the found type appended modifier to an extracted value, using the given operator.
+	 * <p>
+	 * According to the Magic(5) Manpage:
+	 * </p>
 	 *
-	 * @param extractedValue The value, that shall be great than the expected test value.
-	 * @return True, if the given value is greater than the expected test value.
-	 * @throws MagicPatternException Shall be thrown, if the evaluation failed with an exception.
+	 * @param extractedValue The first operand of the current modification operation.
+	 * @param operator       The operator of the current modification operation.
+	 * @param modifier       The second operand of the current modification operation.
+	 * @return The resulting modified {@link Number}.
+	 * @throws MagicPatternException Shall be thrown, if adapting the modifier failed. Always fail for unknown/failed
+	 *                               modification operations, instead of risking to evaluate erroneous values,
+	 *                               or worse : To not report definition gaps/syntax errors.
 	 */
 	@Override
-	protected boolean testGreaterThan(Number extractedValue) throws MagicPatternException {
-		if (getMagicPattern().getType().isUnsigned()) {
-			return getTestValue() != null && extractedValue != null &&
-					extractedValue.longValue() > getTestValue().longValue();
+	protected Number applyModifier(Number extractedValue, MagicOperator operator, Number modifier)
+			throws MagicPatternException {
+		//noinspection DuplicatedCode
+		switch (operator) {
+			// The numeric types may optionally be followed by & and a numeric value, to specify that the value is to be
+			// AND'ed with the numeric value before any comparisons are done.
+			case CONJUNCTION:
+				return extractedValue.intValue() & modifier.intValue();
+			// No direct documentation for this modifier could be found - may be part of file(1) >v.35 "data arithmetic"
+			case SUBTRACT:
+				return extractedValue.intValue() - modifier.intValue();
+			default:
+				throw new MagicPatternException(
+						String.format("Unknown modification operation: '%s %s'", operator.name(), modifier)
+				);
 		}
-		return getTestValue() != null && extractedValue != null &&
-				extractedValue.intValue() > getTestValue().intValue();
 	}
 
 	/**
-	 * Evaluates a {@link MagicOperator#LESS_THAN} for this criterion.
+	 * Evaluates the current {@link AbstractNumericCriterion}, comparing the current test value to the given extracted
+	 * value, using the given operator.
 	 *
-	 * @param extractedValue The value, that shall be less than the expected test value.
-	 * @return True, if the given value is less than the expected test value.
-	 * @throws MagicPatternException Shall be thrown, if the evaluation failed with an exception.
+	 * @param extractedValue The first operand of the current comparison operation.
+	 * @param operator       The operator of the current comparison operation.
+	 * @param testValue      The second operand of the current comparison operation.
+	 * @return True, if the comparison operation is matching.
+	 * @throws MagicPatternException Shall be thrown, if the evaluation failed or the operator is unknown. Always Fail
+	 *                               for unknown/failed evaluation operations, instead of risking to create false
+	 *                               positives, or worse : To not report definition gaps/syntax errors.
 	 */
+	@SuppressWarnings("DuplicatedCode")
 	@Override
-	protected boolean testLessThan(Number extractedValue) throws MagicPatternException {
-		if (getMagicPattern().getType().isUnsigned()) {
-			return getTestValue() != null && extractedValue != null &&
-					extractedValue.longValue() < getTestValue().longValue();
+	protected boolean evaluate(Number extractedValue, MagicOperator operator, Number testValue)
+			throws MagicPatternException {
+		switch (operator) {
+			case EQUALS:
+				if (getMagicPattern().getType().isUnsigned()) {
+					return getExpectedValue() != null && extractedValue != null &&
+							extractedValue.longValue() == getExpectedValue().longValue();
+				}
+				return getExpectedValue() != null && extractedValue != null &&
+						extractedValue.intValue() == getExpectedValue().intValue();
+			case NOT_EQUALS:
+				if (getMagicPattern().getType().isUnsigned()) {
+					return getExpectedValue() != null && extractedValue != null &&
+							extractedValue.longValue() != getExpectedValue().longValue();
+				}
+				return getExpectedValue() != null && extractedValue != null &&
+						extractedValue.intValue() != getExpectedValue().intValue();
+			case GREATER_THAN:
+				if (getMagicPattern().getType().isUnsigned()) {
+					return getExpectedValue() != null && extractedValue != null &&
+							extractedValue.longValue() > getExpectedValue().longValue();
+				}
+				return getExpectedValue() != null && extractedValue != null &&
+						extractedValue.intValue() > getExpectedValue().intValue();
+			case LESS_THAN:
+				if (getMagicPattern().getType().isUnsigned()) {
+					return getExpectedValue() != null && extractedValue != null &&
+							extractedValue.longValue() < getExpectedValue().longValue();
+				}
+				return getExpectedValue() != null && extractedValue != null &&
+						extractedValue.intValue() < getExpectedValue().intValue();
+			case CONJUNCTION:
+				return getExpectedValue() != null && extractedValue != null &&
+						((extractedValue.longValue() & getExpectedValue().longValue()) == getExpectedValue().longValue());
+			case CONTRAVALENCE:
+				return getExpectedValue() != null && extractedValue != null &&
+						((extractedValue.longValue() & getExpectedValue().longValue()) == 0);
+			case COMPLEMENT:
+				return (extractedValue.longValue() == (~getExpectedValue().longValue() & 0xFFFFFFFFL));
+			default:
+				throw new MagicPatternException(
+						String.format("Unknown comparison operation: '%s %s'", operator.name(), testValue)
+				);
 		}
-		return getTestValue() != null && extractedValue != null &&
-				extractedValue.intValue() < getTestValue().intValue();
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#CONJUNCTION} for this criterion.
-	 *
-	 * @param extractedValue The value, that shall have set all the same bits as the expected test value.
-	 * @return True, if the given value has the same bits set, as the expected test value.
-	 */
-	@Override
-	protected boolean testAnd(Number extractedValue) {
-		return getTestValue() != null && extractedValue != null &&
-				((extractedValue.longValue() & getTestValue().longValue()) == getTestValue().longValue());
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#CONTRAVALENCE} for this criterion.
-	 *
-	 * @param extractedValue The value, that shall have cleared all bits set in the expected test value.
-	 * @return True, if the given value has cleared all bits set in the expected test value.
-	 */
-	@Override
-	protected boolean testXor(Number extractedValue) {
-		return getTestValue() != null && extractedValue != null &&
-				((extractedValue.longValue() & getTestValue().longValue()) == 0);
-	}
-
-	/**
-	 * Evaluates a {@link MagicOperator#COMPLEMENT} for this criterion.
-	 *
-	 * @param extractedValue The value, that shall have set all the same bits as the expected test value, after being
-	 *                       negated.
-	 * @return True, if the given value has the same bits set, as the expected test value, after being negated.
-	 */
-	@Override
-	protected boolean testComplement(Number extractedValue) {
-		return (extractedValue.longValue() == (~getTestValue().longValue() & 0xFFFFFFFFL));
 	}
 }
