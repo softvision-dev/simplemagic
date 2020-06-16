@@ -10,6 +10,26 @@ import com.j256.simplemagic.pattern.components.operation.criterion.modifiers.Tex
 
 /**
  * <b>Represents a String criterion from a line in magic (5) format.</b>
+ * <blockquote>
+ * <b>Caveat: </b>
+ * The herby implemented version 5.38 of Magic(5) is partially incompatible with previous versions. For example the
+ * manpage for Magic(5) version 5.04 states that:
+ * </blockquote>
+ * <blockquote>
+ * <i>
+ * The string type specification can be optionally followed by /[Bbc]*. The ''B'' flag compacts whitespace in the
+ * target, which must contain at least one whitespace character. If the magic has n consecutive blanks, the target
+ * needs at least n consecutive blanks to match. The ''b'' flag treats every blank in the target as an optional blank.
+ * Finally the ''c'' flag, specifies case insensitive matching: lowercase characters in the magic match both lower and
+ * upper case characters in the target, whereas upper case characters in the magic only match uppercase characters in
+ * the target.
+ * </i>
+ * </blockquote>
+ * <blockquote>
+ * This contradicts the 'b' flag definition of version 5.38 directly. Also 5.04 contradicts 5.38 by defining some flags
+ * to influence the target (actual value) instead of the magic (expected value) and vice versa. Therefore 5.04 flags can
+ * not be supported. Without allowing to select a specific Magic version first.
+ * </blockquote>
  * <p>
  * As defined in the Magic(5) Manpage:
  * </p>
@@ -152,17 +172,20 @@ public class StringCriterion extends AbstractTextCriterion {
 	 *
 	 * @param data              The binary data, that shall be checked whether they match this criterion.
 	 * @param currentReadOffset The initial offset in the given data.
-	 * @param length            Does not influence the actual value for String criteria - simply set this to -1.
+	 * @param length            Does not influence the actual value for String criteria - value is irrelevant.
 	 * @param invertEndianness  Whether the currently determined endianness shall be inverted.
 	 * @return The {@link ExtractedValue}, that shall match the criterion.
 	 */
 	@Override
 	public ExtractedValue<String> getActualValue(byte[] data, int currentReadOffset, int length, boolean invertEndianness) {
 		String expectedString = getExpectedValue();
+		if (expectedString == null) {
+			return new ExtractedValue<String>(null, currentReadOffset);
+		}
 		int expectationLength = expectedString.length();
 		int actualCharacterOffset = currentReadOffset;
 		int expectedCharacterOffset = 0;
-		StringBuilder actualValueBuilder = new StringBuilder();
+		StringBuilder resultValueBuilder = new StringBuilder();
 
 		for (; expectedCharacterOffset < expectationLength; expectedCharacterOffset++) {
 			// Collect the next expected character.
@@ -177,7 +200,7 @@ public class StringCriterion extends AbstractTextCriterion {
 						if (!Character.isWhitespace(expectedString.charAt(expectedCharacterOffset))) {
 							return new ExtractedValue<String>(null, currentReadOffset);
 						}
-						actualValueBuilder.append(' ');
+						resultValueBuilder.append(' ');
 					}
 					break;
 				} else {
@@ -191,7 +214,7 @@ public class StringCriterion extends AbstractTextCriterion {
 
 			// Skip optional whitespaces.
 			if (isOptionalWhiteSpace() && expectedIsWhitespace && !actualIsWhitespace) {
-				actualValueBuilder.append(' ');
+				resultValueBuilder.append(' ');
 				continue;
 			}
 
@@ -199,37 +222,38 @@ public class StringCriterion extends AbstractTextCriterion {
 			if (isCompactWhiteSpaces() && expectedIsWhitespace) {
 				// Collect number of expected whitespaces.
 				int expectedWhitespaces = 0;
+				//noinspection ConstantConditions
 				while (expectedIsWhitespace && expectedCharacterOffset < expectationLength) {
-					if (expectedIsWhitespace = Character.isWhitespace(expectedString.charAt(expectedCharacterOffset))) {
-						actualValueBuilder.append(' ');
-						expectedWhitespaces++;
-					}
+					resultValueBuilder.append(' ');
+					expectedWhitespaces++;
 					expectedCharacterOffset++;
+					if (!(expectedIsWhitespace = Character.isWhitespace(expectedString.charAt(expectedCharacterOffset)))) {
+						expectedCharacterOffset--;
+					}
 				}
 
 				// Collect number of actual whitespaces.
 				int actualWhitespaces = 0;
 				//noinspection ConstantConditions
 				while (actualIsWhitespace && actualCharacterOffset < data.length) {
+					actualWhitespaces++;
 					actualCharacterOffset++;
-					if (actualIsWhitespace = Character.isWhitespace((char) (data[actualCharacterOffset] & 0xFF))) {
-						actualWhitespaces++;
-					}
+					actualIsWhitespace = Character.isWhitespace((char) (data[actualCharacterOffset] & 0xFF));
 				}
 
 				// If not enough actual whitespaces are found, the match failed.
-				if (actualWhitespaces < expectedWhitespaces) {
+				if (actualWhitespaces < expectedWhitespaces && !isOptionalWhiteSpace()) {
 					return new ExtractedValue<String>(null, currentReadOffset);
 				}
 
 				continue;
 			}
-			// Else prepare to read next character and collect the character.
+			// Actual character is processed and must be collected. Prepare to read next character.
+			resultValueBuilder.append(actualCharacter);
 			actualCharacterOffset++;
-			actualValueBuilder.append(actualCharacter);
 		}
 
-		return new ExtractedValue<String>(actualValueBuilder.toString(), actualCharacterOffset);
+		return new ExtractedValue<String>(resultValueBuilder.toString(), actualCharacterOffset);
 	}
 
 	/**

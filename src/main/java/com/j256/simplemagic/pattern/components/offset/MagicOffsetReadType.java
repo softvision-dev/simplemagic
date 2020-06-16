@@ -216,7 +216,7 @@ public class MagicOffsetReadType {
 				valueByteLength = 4;
 				break;
 			default:
-				magicEndianType = EndianType.NATIVE;
+				magicEndianType = EndianType.LITTLE;
 				readID3Length = false;
 				valueByteLength = 4;
 				break;

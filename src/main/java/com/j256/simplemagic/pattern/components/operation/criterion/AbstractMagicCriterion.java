@@ -173,7 +173,9 @@ public abstract class AbstractMagicCriterion<VALUE_TYPE>
 	public final void parse(MagicPattern magicPattern, String rawDefinition) throws MagicPatternException {
 		setMagicPattern(magicPattern);
 		this.noopCriterion = rawDefinition != null && NOOP_CRITERION.matcher(rawDefinition).matches();
-		if (!isNoopCriterion()) {
+		if (isNoopCriterion()) {
+			parseTypeAppendedModifiers(getMagicPattern().getType().getModifiers());
+		} else {
 			doParse(magicPattern, rawDefinition);
 		}
 	}

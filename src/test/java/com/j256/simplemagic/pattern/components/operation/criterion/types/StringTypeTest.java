@@ -59,10 +59,8 @@ public class StringTypeTest {
 
 	@Test
 	public void testOptionalWhitespace() throws MagicPatternException, IOException {
-		MagicPattern magicPattern = MagicPattern.parse("0 string/b hello");
-		byte[] data = new byte[]{'h', ' ', 'e', ' ', 'l', ' ', 'l', ' ', 'o'};
-		assertEquals(MatchingState.FULL_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
-		data = new byte[]{'h', 'e', 'l', 'l', 'o'};
+		MagicPattern magicPattern = MagicPattern.parse("0 string/w h\\ e\\ l\\ l\\ o");
+		byte[] data = new byte[]{'h', 'e', 'l', 'l', 'o'};
 		assertEquals(MatchingState.FULL_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
 		data = new byte[]{'n', 'e', 'l', 'l', 'o'};
 		assertEquals(MatchingState.NO_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
@@ -70,7 +68,7 @@ public class StringTypeTest {
 
 	@Test
 	public void testCompactWhitespace() throws MagicPatternException, IOException {
-		MagicPattern magicPattern = MagicPattern.parse("0 string/B h\\ ello");
+		MagicPattern magicPattern = MagicPattern.parse("0 string/W h\\ ello");
 		byte[] data = new byte[]{'h', ' ', 'e', 'l', 'l', 'o'};
 		assertEquals(MatchingState.FULL_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
 		data = new byte[]{'h', ' ', 'e', ' ', 'l', ' ', 'l', ' ', 'o'};
@@ -78,7 +76,7 @@ public class StringTypeTest {
 		data = new byte[]{'h', ' ', ' ', 'e', 'l', 'l', 'o'};
 		assertEquals(MatchingState.FULL_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
 
-		magicPattern = MagicPattern.parse("0 string/B h\\ e\\ llo");
+		magicPattern = MagicPattern.parse("0 string/W h\\ e\\ llo");
 		data = new byte[]{'h', ' ', ' ', 'e', ' ', ' ', ' ', 'l', 'l', 'o'};
 		assertEquals(MatchingState.FULL_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
 		data = new byte[]{'h', ' ', ' ', 'b', ' ', ' ', ' ', 'l', 'l', 'o'};
@@ -87,7 +85,7 @@ public class StringTypeTest {
 
 	@Test
 	public void testCompactWhitespacePlusCaseInsensitive() throws MagicPatternException, IOException {
-		MagicPattern magicPattern = MagicPattern.parse("0 string/Bc h\\ ello");
+		MagicPattern magicPattern = MagicPattern.parse("0 string/Wc h\\ ello");
 		byte[] data = new byte[]{'h', ' ', 'e', 'l', 'l', 'o'};
 		assertEquals(MatchingState.FULL_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
 		data = new byte[]{'h', ' ', ' ', 'e', 'l', 'l', 'o'};
@@ -100,22 +98,20 @@ public class StringTypeTest {
 
 	@Test
 	public void testCompactPlusOptionalWhitespace() throws MagicPatternException, IOException {
-		MagicPattern magicPattern = MagicPattern.parse("0 string/Bb h\\ ello");
+		MagicPattern magicPattern = MagicPattern.parse("0 string/Ww h\\ ello");
 		byte[] data = new byte[]{'h', ' ', 'e', 'l', 'l', 'o'};
 		assertEquals(MatchingState.FULL_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
 		data = new byte[]{'h', ' ', ' ', 'e', 'l', 'l', 'o'};
 		assertEquals(MatchingState.FULL_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
-		data = new byte[]{'h', ' ', 'e', ' ', 'l', 'l', 'o'};
-		assertEquals(MatchingState.FULL_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
 		data = new byte[]{'h', 'e', ' ', 'l', 'l', 'o'};
 		assertEquals(MatchingState.NO_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
-		data = new byte[]{'h', ' ', ' ', ' ', 'e', ' ', 'l', 'l', 'o'};
+		data = new byte[]{'h', ' ', ' ', ' ', 'e', 'l', 'l', 'o'};
 		assertEquals(MatchingState.FULL_MATCH, magicPattern.isMatch(data, 0, new MagicEntries()).getMatchingState());
 	}
 
 	@Test
 	public void testRenderValue() throws MagicPatternException, IOException {
-		MagicPattern magicPattern = MagicPattern.parse("0 string/Bb h\\ ello %s");
+		MagicPattern magicPattern = MagicPattern.parse("0 string/Ww h\\ ello %s");
 		byte[] data = new byte[]{'h', ' ', 'e', 'l', 'l', 'o'};
 		MatchingResult result = magicPattern.isMatch(data, 0, new MagicEntries());
 		assertEquals(MatchingState.FULL_MATCH, result.getMatchingState());
@@ -124,7 +120,7 @@ public class StringTypeTest {
 		data = new byte[]{'h', ' ', ' ', ' ', 'e', 'l', 'l', 'o'};
 		result = magicPattern.isMatch(data, 0, new MagicEntries());
 		assertEquals(MatchingState.FULL_MATCH, result.getMatchingState());
-		assertEquals("h   ello", result.toString());
+		assertEquals("h ello", result.toString());
 	}
 
 	@Test

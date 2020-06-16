@@ -123,17 +123,22 @@ public class LittleEndianConverter extends AbstractEndianConverter {
 			value = value.shiftLeft(shift).or(BigInteger.valueOf(data[i] & mask));
 		}
 
+		String stringValue;
 		try {
 			switch (characterByteSize) {
 				case 1:
-					return new String(value.toByteArray(), "UTF-8");
+					stringValue = new String(value.toByteArray(), "UTF-8");
+					break;
 				case 2:
-					return new String(value.toByteArray(), "UTF-16");
+					stringValue = new String(value.toByteArray(), "UTF-16");
+					break;
 				default:
 					throw new UnsupportedOperationException();
 			}
 		} catch (UnsupportedEncodingException ex) {
 			throw new UnsupportedOperationException();
 		}
+
+		return new StringBuilder(stringValue).reverse().toString();
 	}
 }

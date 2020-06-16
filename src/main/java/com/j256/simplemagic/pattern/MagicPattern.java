@@ -4,6 +4,7 @@ import com.j256.simplemagic.MagicEntries;
 import com.j256.simplemagic.error.MagicPatternException;
 import com.j256.simplemagic.pattern.components.*;
 import com.j256.simplemagic.pattern.components.operation.MagicOperationFactory;
+import com.j256.simplemagic.pattern.components.operation.criterion.ExtractedValue;
 import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterionResult;
 import com.j256.simplemagic.pattern.components.operation.criterion.MagicCriterion;
 import com.j256.simplemagic.pattern.components.operation.instruction.types.DefaultInstruction;
@@ -22,10 +23,25 @@ import java.util.List;
 import static com.j256.simplemagic.pattern.PatternUtils.*;
 import static com.j256.simplemagic.pattern.components.operation.criterion.numeric.AbstractNumericCriterion.NUMERIC_OPERATORS;
 
+// TODO: introduction of the "MagicVersion" parameter to support patterns of other Magic versions / implementations.
+// As This whole implementation must be adapted for the file(1) style extended magic patterns, the first
+// differentiation could be implemented based on the differences in between Magic(5) 5.38 and the file(1) extended magic.
+// TODO: Implement support for file(1) extended magic.
+// TODO: Validate and test file recognition for file(1) extended magic in depth. Replace and adapt old tests wherever
+// necessary.
+
 /**
  * <b>An instance of this class represents a line in magic pattern format.</b>
+ * <blockquote>
+ * <b>Caveat:</b>
+ * The herby defined patterns are compatible with Magic(5) <b>version 5.38 only!</b> It can not be guaranteed, that
+ * following or previous versions will be compatible with the herby given definitions! For example the manpage of
+ * Magic(5) version 5.38 and 5.04 are partially contradicting each other directly. When evaluating patterns defined for
+ * another Magic(5) version, the evaluation of such patterns may fail, or the patterns may be misinterpreted.
+ * </blockquote>
  * <p>
- * As defined in the Magic(5) Manpage:
+ * The herby defined Magic Patterns shall implement the features of file(1) and Magic(5) (version 5.38), As defined in
+ * the Magic(5) Manpage:
  * </p>
  * <p>
  * <i>
@@ -69,6 +85,7 @@ public class MagicPattern {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MagicPattern.class);
 
 	private final int level;
+	private final String rawPattern;
 	private final MagicOffset offset;
 	private final MagicType type;
 	private final MagicOperation operation;
@@ -110,28 +127,41 @@ public class MagicPattern {
 	 * formatting instructions given by such a line (if such instructions are present).
 	 * </p>
 	 *
-	 * @param level     The level of this pattern. 0 means, that this is a top level pattern, higher levels define
-	 *                  children of patterns with that level-1. Negative values are treated as invalid.
-	 * @param offset    The {@link MagicOffset} from which information, that must be evaluated by this pattern, shall
-	 *                  be read from processed binary data. A 'null' value will be treated as invalid.
-	 * @param type      The {@link MagicType} of information, that shall be read from processed data.
-	 *                  A 'null' value will be treated as invalid.
-	 * @param operation The {@link MagicOperation}, that shall be used to evaluate this pattern.
-	 *                  A 'null' value will be treated as invalid.
-	 * @param message   The {@link MagicMessage} contains information, that shall be appended to the {@link MatchingResult}.
-	 *                  A 'null' value will be treated as invalid.
+	 * @param rawPattern The raw magic pattern as a String. A 'null' value will be treated as invalid.
+	 * @param level      The level of this pattern. 0 means, that this is a top level pattern, higher levels define
+	 *                   children of patterns with that level-1. Negative values are treated as invalid.
+	 * @param offset     The {@link MagicOffset} from which information, that must be evaluated by this pattern, shall
+	 *                   be read from processed binary data. A 'null' value will be treated as invalid.
+	 * @param type       The {@link MagicType} of information, that shall be read from processed data.
+	 *                   A 'null' value will be treated as invalid.
+	 * @param operation  The {@link MagicOperation}, that shall be used to evaluate this pattern.
+	 *                   A 'null' value will be treated as invalid.
+	 * @param message    The {@link MagicMessage} contains information, that shall be appended to the {@link MatchingResult}.
+	 *                   A 'null' value will be treated as invalid.
 	 * @throws MagicPatternException Invalid parameters shall cause this.
 	 */
-	public MagicPattern(int level, MagicOffset offset, MagicType type, MagicOperation operation, MagicMessage message)
+	public MagicPattern(String rawPattern, int level, MagicOffset offset, MagicType type, MagicOperation operation,
+			MagicMessage message)
 			throws MagicPatternException {
-		if (level < 0 || offset == null || type == null || operation == null || message == null) {
+		if (rawPattern == null || level < 0 || offset == null || type == null || operation == null || message == null) {
 			throw new MagicPatternException("Invalid magic pattern initialization.");
 		}
+		this.rawPattern = rawPattern;
 		this.level = level;
 		this.offset = offset;
 		this.type = type;
 		this.message = message;
 		this.operation = operation;
+	}
+
+	/**
+	 * Returns the raw magic pattern as a String.
+	 *
+	 * @return The raw magic pattern as a String. (must never return 'null')
+	 */
+	@SuppressWarnings("unused")
+	public String getRawPattern() {
+		return rawPattern;
 	}
 
 	/**
@@ -330,8 +360,7 @@ public class MagicPattern {
 			MatchingResult patternResult, MagicEntries entries, boolean invertEndianness)
 			throws IOException, MagicPatternException {
 		int offset = (int) getOffset().getReadOffset(data, currentReadOffset, indirectOffset);
-
-		MagicCriterionResult<?> result = null;
+		Object resultValue = null;
 		boolean currentMatchingState = false;
 		MagicOperation operation = getOperation();
 
@@ -363,13 +392,14 @@ public class MagicPattern {
 		}
 		// If it is a testable criterion, then we shall evaluate it's results.
 		else if (!operation.isNoopCriterion() && operation instanceof MagicCriterion) {
-			result = ((MagicCriterion<?>) operation).isMatch(data, offset, invertEndianness);
+			MagicCriterionResult<?> result = ((MagicCriterion<?>) operation).isMatch(data, offset, invertEndianness);
 			if (!result.isMatch()) {
 				return currentMatchingState;
 			} else if (patternResult.isMatchingState(MatchingState.NO_MATCH)) {
 				patternResult.setMatchingState(MatchingState.PARTIAL_MATCH);
 			}
 			currentMatchingState = true;
+			resultValue = result.getMatchingValue();
 			offset = result.getNextReadOffset();
 		}
 		// If it is some sort of noop criterion, then we shall not evaluate it and default to true.
@@ -377,6 +407,12 @@ public class MagicPattern {
 		else if (operation.isNoopCriterion()) {
 			currentMatchingState = true;
 			patternResult.setMatchingState(MatchingState.PARTIAL_MATCH);
+			if (operation instanceof MagicCriterion) {
+				ExtractedValue<?> value = ((MagicCriterion<?>) operation).
+						getActualValue(data, offset, getType().getByteLength(), invertEndianness);
+				resultValue = value.getValue();
+				offset = value.getSuggestedNextReadOffset();
+			}
 		}
 
 		// If we have reached this, then the current Criterion has matched.
@@ -390,9 +426,7 @@ public class MagicPattern {
 				patternResult.append(" ");
 			}
 
-			patternResult.append(getMessage().getFormatter().format(
-					result != null ? result.getMatchingValue() : ""
-			));
+			patternResult.append(getMessage().getFormatter().format(resultValue));
 		}
 		LOGGER.trace("matched data: {}: {}", this, patternResult);
 
@@ -596,7 +630,7 @@ public class MagicPattern {
 			format = MagicMessage.parse(type.getOperationType(), "");
 		}
 
-		MagicPattern magicPattern = new MagicPattern(level, offset, type, operation, format);
+		MagicPattern magicPattern = new MagicPattern(rawLine, level, offset, type, operation, format);
 		operation.parse(magicPattern, criterionString);
 		return magicPattern;
 	}

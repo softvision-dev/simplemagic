@@ -64,11 +64,11 @@ public class SearchTypeTest {
 
 	@Test
 	public void testOptionalWhitespace() throws MagicPatternException, IOException {
-		MagicPattern magicPattern = MagicPattern.parse("0 search/9/b hello %s");
-		byte[] data = new byte[]{'1', '2', 'h', 'e', 'l', ' ', 'l', ' ', 'o', ' ', '2', '4'};
+		MagicPattern magicPattern = MagicPattern.parse("0 search/10/w h\\ e\\ llo %s");
+		byte[] data = new byte[]{'1', '2', 'h', 'e', 'l', 'l', 'o', ' ', '2', '4'};
 		// match on the line started at offset 1
 		MatchingResult result = magicPattern.isMatch(data, 0, new MagicEntries());
 		assertEquals(MatchingState.FULL_MATCH, result.getMatchingState());
-		assertEquals("hel l o", result.toString());
+		assertEquals("h e llo", result.toString());
 	}
 }

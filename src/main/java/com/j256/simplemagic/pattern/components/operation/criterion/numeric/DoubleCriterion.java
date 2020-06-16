@@ -107,40 +107,40 @@ public class DoubleCriterion extends AbstractNumericCriterion {
 	 * Evaluates the current {@link AbstractNumericCriterion}, comparing the current test value to the given extracted
 	 * value, using the given operator.
 	 *
-	 * @param extractedValue The first operand of the current comparison operation.
-	 * @param operator       The operator of the current comparison operation.
-	 * @param testValue      The second operand of the current comparison operation.
+	 * @param actualValue The first operand of the current comparison operation.
+	 * @param operator    The operator of the current comparison operation.
+	 * @param expectedValue   The second operand of the current comparison operation.
 	 * @return True, if the comparison operation is matching.
 	 * @throws MagicPatternException Shall be thrown, if the evaluation failed or the operator is unknown. Always Fail
 	 *                               for unknown/failed evaluation operations, instead of risking to create false
 	 *                               positives, or worse : To not report definition gaps/syntax errors.
 	 */
 	@Override
-	protected boolean evaluate(Number extractedValue, MagicOperator operator, Number testValue)
+	protected boolean evaluate(Number actualValue, MagicOperator operator, Number expectedValue)
 			throws MagicPatternException {
 		switch (operator) {
 			case EQUALS:
-				return getExpectedValue() != null && extractedValue != null &&
-						extractedValue.doubleValue() == getExpectedValue().doubleValue();
+				return expectedValue != null && actualValue != null &&
+						actualValue.doubleValue() == expectedValue.doubleValue();
 			case NOT_EQUALS:
-				return getExpectedValue() != null && extractedValue != null &&
-						extractedValue.doubleValue() != getExpectedValue().doubleValue();
+				return expectedValue != null && actualValue != null &&
+						actualValue.doubleValue() != expectedValue.doubleValue();
 			case GREATER_THAN:
-				return getExpectedValue() != null && extractedValue != null &&
-						extractedValue.doubleValue() > getExpectedValue().doubleValue();
+				return expectedValue != null && actualValue != null &&
+						actualValue.doubleValue() > expectedValue.doubleValue();
 			case LESS_THAN:
-				return getExpectedValue() != null && extractedValue != null &&
-						extractedValue.doubleValue() < getExpectedValue().doubleValue();
+				return expectedValue != null && actualValue != null &&
+						actualValue.doubleValue() < expectedValue.doubleValue();
 			// Operators &, ^, and ~ don't work with floats and doubles.
 			case CONJUNCTION:
 			case CONTRAVALENCE:
 			case COMPLEMENT:
 				throw new MagicPatternException(
-						String.format("Invalid comparison operation for double type: '%s %s'", operator.name(), testValue)
+						String.format("Invalid comparison operation for double type: '%s %s'", operator.name(), expectedValue)
 				);
 			default:
 				throw new MagicPatternException(
-						String.format("Unknown comparison operation: '%s %s'", operator.name(), testValue)
+						String.format("Unknown comparison operation: '%s %s'", operator.name(), expectedValue)
 				);
 		}
 	}

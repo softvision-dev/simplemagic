@@ -95,28 +95,30 @@ public class PascalStringCriterion extends AbstractTextCriterion {
 
 	/**
 	 * Returns the value, that is actually found in the data at the expected position. For Pascal Strings the length
-	 * and offset shall be given after resolving the pascal length bytes. The length shall determine the pure value
-	 * length and the offset shall point to the terminal offset of the length bytes. May not return null directly,
+	 * and offset shall be found by resolving the pascal length bytes. May not return null directly,
 	 * wrap 'null' value using {@link ExtractedValue} instead.
 	 *
 	 * @param data              The binary data, that shall be checked whether they match this criterion.
 	 * @param currentReadOffset The initial offset in the given data.
-	 * @param length            The value length in bytes. (-1 if no length shall be given.)
+	 * @param length            Does not influence the actual value for PascalString criteria - value is irrelevant.
 	 * @param invertEndianness  Whether the currently determined endianness shall be inverted.
 	 * @return The value, that shall match the criterion.
 	 */
 	@Override
 	public ExtractedValue<String> getActualValue(byte[] data, int currentReadOffset, int length, boolean invertEndianness) {
-		if (currentReadOffset + length > data.length) {
+		int actualValueByteLength = getActualValueByteLength(data, currentReadOffset, invertEndianness);
+		if (currentReadOffset + actualValueByteLength > data.length) {
 			return new ExtractedValue<String>(null, currentReadOffset);
 		}
+		int lengthValueTerminalOffset = currentReadOffset + getLengthValueByteCount();
 
 		// Read actual value to String.
 		EndianConverter endianConverter = EndianConverterFactory.createEndianConverter(
 				invertEndianness ? getEndianness().getInvertedEndianType() : getEndianness()
 		);
-		return new ExtractedValue<String>(endianConverter.convertUTF8String(data, currentReadOffset, length),
-				currentReadOffset + length);
+		return new ExtractedValue<String>(endianConverter.convertUTF8String(
+				data, lengthValueTerminalOffset, actualValueByteLength
+		), currentReadOffset + actualValueByteLength);
 	}
 
 	/**
@@ -154,10 +156,8 @@ public class PascalStringCriterion extends AbstractTextCriterion {
 		}
 
 		// Collect actual and expected value.
-		int actualValueByteLength = getActualValueByteLength(data, currentReadOffset, invertEndianness);
-		int lengthValueTerminalOffset = currentReadOffset + getLengthValueByteCount();
 		ExtractedValue<String> actualValue = getActualValue(
-				data, lengthValueTerminalOffset, actualValueByteLength, invertEndianness
+				data, currentReadOffset, -1, invertEndianness
 		);
 		String expectedValue = getExpectedValue();
 		if (actualValue.getValue() == null || expectedValue == null ||

@@ -190,7 +190,7 @@ public abstract class AbstractNumericCriterion extends AbstractMagicCriterion<Nu
 		}
 
 		// Test the value for a match.
-		if (evaluate(actualValue.getValue(), getOperator(), getExpectedValue())) {
+		if (evaluate(actual, getOperator(), getExpectedValue())) {
 			return new MagicCriterionResult<Number>(true, this,
 					actualValue.getSuggestedNextReadOffset(), actual);
 		} else {

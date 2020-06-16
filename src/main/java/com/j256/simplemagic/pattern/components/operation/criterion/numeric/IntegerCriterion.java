@@ -107,9 +107,9 @@ public class IntegerCriterion extends AbstractNumericCriterion {
 	 * Evaluates the current {@link AbstractNumericCriterion}, comparing the current test value to the given extracted
 	 * value, using the given operator.
 	 *
-	 * @param extractedValue The first operand of the current comparison operation.
+	 * @param actualValue The first operand of the current comparison operation.
 	 * @param operator       The operator of the current comparison operation.
-	 * @param testValue      The second operand of the current comparison operation.
+	 * @param expectedValue      The second operand of the current comparison operation.
 	 * @return True, if the comparison operation is matching.
 	 * @throws MagicPatternException Shall be thrown, if the evaluation failed or the operator is unknown. Always Fail
 	 *                               for unknown/failed evaluation operations, instead of risking to create false
@@ -117,48 +117,48 @@ public class IntegerCriterion extends AbstractNumericCriterion {
 	 */
 	@SuppressWarnings("DuplicatedCode")
 	@Override
-	protected boolean evaluate(Number extractedValue, MagicOperator operator, Number testValue)
+	protected boolean evaluate(Number actualValue, MagicOperator operator, Number expectedValue)
 			throws MagicPatternException {
 		switch (operator) {
 			case EQUALS:
 				if (getMagicPattern().getType().isUnsigned()) {
-					return getExpectedValue() != null && extractedValue != null &&
-							extractedValue.longValue() == getExpectedValue().longValue();
+					return expectedValue != null && actualValue != null &&
+							actualValue.longValue() == expectedValue.longValue();
 				}
-				return getExpectedValue() != null && extractedValue != null &&
-						extractedValue.intValue() == getExpectedValue().intValue();
+				return expectedValue != null && actualValue != null &&
+						actualValue.intValue() == expectedValue.intValue();
 			case NOT_EQUALS:
 				if (getMagicPattern().getType().isUnsigned()) {
-					return getExpectedValue() != null && extractedValue != null &&
-							extractedValue.longValue() != getExpectedValue().longValue();
+					return expectedValue != null && actualValue != null &&
+							actualValue.longValue() != expectedValue.longValue();
 				}
-				return getExpectedValue() != null && extractedValue != null &&
-						extractedValue.intValue() != getExpectedValue().intValue();
+				return expectedValue != null && actualValue != null &&
+						actualValue.intValue() != expectedValue.intValue();
 			case GREATER_THAN:
 				if (getMagicPattern().getType().isUnsigned()) {
-					return getExpectedValue() != null && extractedValue != null &&
-							extractedValue.longValue() > getExpectedValue().longValue();
+					return expectedValue != null && actualValue != null &&
+							actualValue.longValue() > expectedValue.longValue();
 				}
-				return getExpectedValue() != null && extractedValue != null &&
-						extractedValue.intValue() > getExpectedValue().intValue();
+				return expectedValue != null && actualValue != null &&
+						actualValue.intValue() > expectedValue.intValue();
 			case LESS_THAN:
 				if (getMagicPattern().getType().isUnsigned()) {
-					return getExpectedValue() != null && extractedValue != null &&
-							extractedValue.longValue() < getExpectedValue().longValue();
+					return expectedValue != null && actualValue != null &&
+							actualValue.longValue() < expectedValue.longValue();
 				}
-				return getExpectedValue() != null && extractedValue != null &&
-						extractedValue.intValue() < getExpectedValue().intValue();
+				return expectedValue != null && actualValue != null &&
+						actualValue.intValue() < expectedValue.intValue();
 			case CONJUNCTION:
-				return getExpectedValue() != null && extractedValue != null &&
-						((extractedValue.longValue() & getExpectedValue().longValue()) == getExpectedValue().longValue());
+				return expectedValue != null && actualValue != null &&
+						((actualValue.longValue() & expectedValue.longValue()) == expectedValue.longValue());
 			case CONTRAVALENCE:
-				return getExpectedValue() != null && extractedValue != null &&
-						((extractedValue.longValue() & getExpectedValue().longValue()) == 0);
+				return expectedValue != null && actualValue != null &&
+						((actualValue.longValue() & expectedValue.longValue()) == 0);
 			case COMPLEMENT:
-				return (extractedValue.longValue() == (~getExpectedValue().longValue() & 0xFFFFFFFFL));
+				return (actualValue.longValue() == (~expectedValue.longValue() & 0xFFFFFFFFL));
 			default:
 				throw new MagicPatternException(
-						String.format("Unknown comparison operation: '%s %s'", operator.name(), testValue)
+						String.format("Unknown comparison operation: '%s %s'", operator.name(), expectedValue)
 				);
 		}
 	}

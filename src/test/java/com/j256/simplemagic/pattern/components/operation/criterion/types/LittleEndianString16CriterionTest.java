@@ -12,15 +12,6 @@ import org.junit.Test;
 import java.io.IOException;
 
 public class LittleEndianString16CriterionTest {
-	//TODO: rethink - reactivate
-	/*
-	@Test
-	public void testStuff() {
-		String16Extractor extractor = new String16Extractor(EndianType.LITTLE);
-		byte[] bytes = new byte[]{1, 'a', 2, 'b'};
-		char[] value = extractor.extractValue(bytes, 0, false);
-		assertEquals("愁戂", new String(value));
-	}*/
 
 	@Test
 	public void testMatch() throws MagicPatternException, IOException {
